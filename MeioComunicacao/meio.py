@@ -5,6 +5,8 @@ def adicionarRuido(
     media: float,                
     desvioPadrao: float
 ) -> list[float]:
+    if desvioPadrao < 0:
+        raise ValueError("o Desvio padrao nao pode ser negativo")
 
     sinal_recebido = []         
     for valor in sinal:
