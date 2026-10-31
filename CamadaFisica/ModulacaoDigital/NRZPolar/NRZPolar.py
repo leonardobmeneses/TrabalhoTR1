@@ -38,7 +38,7 @@ def decodificadorNRZPolar(
 
     bits_recebidos = []
     for amostra in amostras:
-        if amostra >= limite:
+        if amostra >= limite:                   #se sinal for maior que 0 vamos entender que eh o bit 1
             bits_recebidos.append(1)
         else:
             bits_recebidos.append(0)
