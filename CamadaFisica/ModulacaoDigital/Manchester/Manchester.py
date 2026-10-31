@@ -48,8 +48,8 @@ def decodificadorManchester(
 
     bitsRecebidos = []
 
-    for i in range(0, len(amostras), 2):       #como teremos dois bits para uma so mensagem entao vamos de dois em dois
-        primeira = amostras[i]                 #vejo o primeiro bit e o segundo
+    for i in range(0, len(amostras), 2):       #como teremos duas amostras para uma so mensagem entao vamos de dois em dois
+        primeira = amostras[i]                 #vejo o primeiro bit e o segundo e analiso os sinais
         segunda = amostras[i + 1]
 
         if primeira >= limite and segunda < limite:
