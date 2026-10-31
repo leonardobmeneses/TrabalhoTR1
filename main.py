@@ -1,10 +1,6 @@
 from MeioComunicacao.meio import adicionarRuido
-
-sinalTransmitido = [1.0, 1,0, -1.0, 1.0, 2.0]
-media = 0.0
-desvio = 0.1
-
-sinalRecebido = adicionarRuido(sinalTransmitido, media, desvio)
-
-print("Sinal Transmitido: ", sinalTransmitido)
-print("Sinal que Recebeu: ", sinalRecebido)
+from CamadaFisica.ModulacaoDigital.NRZPolar.NRZPolar import (codificarNRZPolar,decodificadorNRZPolar)
+from CamadaFisica.ModulacaoDigital.NRZPolar.amostrador import amostradorSinal 
+from visualizador import plotarNRZPolar
+import random
+    
