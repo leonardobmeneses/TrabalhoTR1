@@ -22,16 +22,16 @@ def codificarManchester(
 
     for bit in bits:
         if bit == 0:                            #se 0 o manchester vai fazer 01
-            primeiroNivel = -amplitude
-            segundoNivel = amplitude
+            primeiro_nivel = -amplitude
+            segundo_nivel = amplitude
         else:                                   #se 1 o manchester vai fazer 10
-            primeiroNivel = amplitude
-            segundoNivel = -amplitude
+            primeiro_nivel = amplitude
+            segundo_nivel = -amplitude
 
         for _ in range(metade):
-            sinal.append(float(primeiroNivel))
+            sinal.append(float(primeiro_nivel))
         for _ in range(metade):
-            sinal.append(float(segundoNivel))
+            sinal.append(float(segundo_nivel))
 
     return sinal
 
@@ -46,17 +46,17 @@ def decodificadorManchester(
     if len(amostras) % 2 != 0:
         raise ValueError("A quantidade de amostras deve ser par.")
 
-    bitsRecebidos = []
+    bits_recebidos = []
 
     for i in range(0, len(amostras), 2):       #como teremos duas amostras para uma so mensagem entao vamos de dois em dois
         primeira = amostras[i]                 #vejo o primeiro bit e o segundo e analiso os sinais
         segunda = amostras[i + 1]
 
         if primeira >= limite and segunda < limite:
-            bitsRecebidos.append(1)
+            bits_recebidos.append(1)
         elif primeira < limite and segunda >= limite:
-            bitsRecebidos.append(0)
+            bits_recebidos.append(0)
         else:
             raise ValueError("Transicao Manchester invalida.")
 
-    return bitsRecebidos
+    return bits_recebidos
