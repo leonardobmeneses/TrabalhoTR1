@@ -14,19 +14,19 @@ def codificarBipolar(
         raise ValueError("A amostragem deve ser positiva.")
 
     sinal = []
-    flag = False
+    negativo = False
     for bit in bits:
         if bit != 0 and bit != 1:
             raise ValueError("O bit deve ser 1 ou 0.")
         elif bit == 0:
             nivel = 0.0
         elif bit == 1:
-            if not flag:
+            if not negativo:
                 nivel = amplitude
-                flag = True
+                negativo = True
             else:
                 nivel = -amplitude
-                flag = False
+                negativo = False
         for _ in range(amostragem):
             sinal.append(float(nivel))       
 
