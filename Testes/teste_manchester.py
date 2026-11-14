@@ -1,5 +1,5 @@
 from CamadaFisica.ModulacaoDigital.Manchester.Manchester import codificarManchester, decodificadorManchester
-from CamadaFisica.amostrador import amostradorSinal
+from CamadaFisica.ModulacaoDigital.amostrador import amostradorSinal
 import random
 from MeioComunicacao.meio import adicionarRuido
 def main():
