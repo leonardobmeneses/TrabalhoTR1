@@ -7,11 +7,12 @@ from CamadaFisica.ModulacaoDigital.amostrador import amostradorSinal
 from MeioComunicacao.meio import adicionarRuido
 
 def transmitirMensagem(
-        mensagem: str,
-        modulacao : str,
-        media : float = 0.0,
-        desvio_padrao : float = 0.0
-    ) -> str:
+    mensagem: str,
+    modulacao: str,
+    media: float = 0.0,
+    desvio_padrao: float = 0.0,
+    detalhes: bool = False
+) -> str | dict[str, str]:
     amplitude = 1.0
     amostragem = 100
 
@@ -54,5 +55,15 @@ def transmitirMensagem(
 
     #Aplicacao de rede - receptor
     mensagemRecebida = bitsParaTexto(bitsRecebidosString)
+
+    if detalhes:
+        return {
+            "textoTX": mensagem,
+            "bitsTX": bitsString,
+            "textoRX": mensagemRecebida,
+            "bitsRX": bitsRecebidosString,
+            "sinalTX": str([round(v, 2) for v in sinal[:10]]),
+            "sinalRX": str([round(v, 2) for v in sinalRecebido[:10]])
+        }
 
     return mensagemRecebida

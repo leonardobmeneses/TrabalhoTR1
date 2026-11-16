@@ -2,17 +2,16 @@ from Simulador.simulador import transmitirMensagem
 
 
 def main():
-    mensagem = "TR1 e uma materia de redes"
-
-    for modulacao in ["NRZPolar", "Manchester", "Bipolar"]:
-        mensagemRecebida = transmitirMensagem(
-            mensagem,
-            modulacao,
-            desvio_padrao=0.1
+    dados = transmitirMensagem(
+        "oi",
+        "NRZPolar",
+        desvio_padrao=0.1,
+        detalhes=True
     )
-        print("\nModulacao:", modulacao)
-        print("Mensagem enviada:", mensagem)
-        print("Mensagem recebida:", mensagemRecebida)
-        print("Teste passou?", mensagem == mensagemRecebida)
+
+    print("Sinal TX:", dados["sinalTX"])
+    print("Sinal RX:", dados["sinalRX"])
+
+
 if __name__ == "__main__":
     main()
