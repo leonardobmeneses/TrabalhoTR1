@@ -1,41 +1,6 @@
 TAM_BYTE = 8                    # 1 "caractere" = 1 byte = 8 bits
-TAM_MAX_PADRAO = 8              # bytes de dados por quadro (padrão)
-TAM_CABECALHO_CONTAGEM = 1      # byte de contagem (conta o próprio cabeçalho)
-TAM_CABECALHO_ENTRELACADO = 32  # bits que guardam o tamanho original do payload
 
-FLAG_BYTE = "01111110"          # 0x7E: delimitador do byte stuffing
-ESC_BYTE = "01111101"           # 0x7D: byte de escape do byte stuffing
-FLAG_BIT = "01111110"           # delimitador do bit stuffing (padrão HDLC)
-
-def textoParaBits(texto : str) -> str:
-    dados = texto.encode("ascii")       #transformo o texto em bits conforme a tabela ASCII
-    bits = ""
-    for byte in dados:
-        bits += format(byte, "08b")     #tranformo cada caractere em byte ou 8 bits
-    return bits
-
-def bitsParaTexto(bits : str) -> str:
-    if len(bits) % 8 != 0:
-        raise ValueError("Devem ser enviados bytes.")    
-    texto = ""
-    for i in range(0, len(bits), 8):    #vamos separando as sequencias de bits de 8 em 8
-        byte = bits[i : i+8]
-        binario = int(byte, 2)
-        texto += chr(binario)
-    return texto
-
-# Funções auxiliares
-def inteiro_para_bits(valor, n_bits=TAM_BYTE):
-    """Converte um inteiro em string de n_bits bits (MSB primeiro)."""
-    if valor < 0 or valor >= 2 ** n_bits:
-        raise ValueError("Valor não cabe em {} bits.".format(n_bits))
-    return format(valor, "0{}b".format(n_bits))
-
-def bits_para_inteiro(bits):
-    """Converte uma string de bits (MSB primeiro) em inteiro."""
-    return int(bits, 2) if bits else 0
-
-# 2. Enquadramento: entrelaçamento de bits
+# Enquadramento: entrelaçamento de bits
 def entrelacamento_TX(cargaUtil : str, tam_max_quadro : int) -> list[str]:
     """
     TX: o payload é dividido em N linhas de tam_max_quadro bytes;
@@ -97,16 +62,3 @@ def entrelacamento_RX(fluxo : list[str]) -> str:
         bits+=linhas
 
     return bits
-
-
-if __name__ == "__main__":
-    text = input("insira entrada:\n")
-    manda = textoParaBits(text)
-    encaminha = entrelacamento_TX(manda, 2)
-    print(f"Encaminhado = {encaminha}\n")
-    print(f"Entrada em bits = '{manda}'")
-    print(f"Linhas da encaminhada = {len(encaminha)}")
-    print("\n")
-    recebe = entrelacamento_RX(encaminha)
-    print(f"saida em bits =   '{recebe}'")
-    print(f"Mandou {text} e recebeu {bitsParaTexto(recebe)}")
