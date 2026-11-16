@@ -10,13 +10,6 @@ def bits_para_inteiro(bits : str) -> int:
     """Converte uma string de bits (MSB primeiro) em inteiro."""
     return int(bits, 2) if bits else 0
 
-def _validar_payload(bits : str) -> None:
-    """Garante que o payload é uma string de bits com tamanho múltiplo de 8."""
-    if not isinstance(bits, str) or set(bits) - {"0", "1"}:
-        raise ValueError("O trem de bits deve ser uma string de '0' e '1'.")
-    if len(bits) % TAM_BYTE != 0:
-        raise ValueError("O payload deve ter número de bits múltiplo de 8.")
-
 # Enquadramento - contagem de caracteres
 def contagem_caracteres_TX(cargaUtil : str, tam_max_quadro : int) -> list[str]:
     """
@@ -25,8 +18,6 @@ def contagem_caracteres_TX(cargaUtil : str, tam_max_quadro : int) -> list[str]:
     por isso tam_max_quadro varia de 1 a 255 bytes.
     Retorna uma lista de quadros (strings de bits)
     """
-
-    _validar_payload(cargaUtil)
 
     if tam_max_quadro < 1:
         raise ValueError("tam_max_quadro deve ser pelo menos 1 byte.")

@@ -3,20 +3,13 @@ FLAG_BYTE = "01111110"          # 0x7E: delimitador do byte stuffing
 ESC_BYTE = "01111101"           # 0x7D: byte de escape do byte stuffing
 
 
-def _validar_payload(bits : str) -> None:
-    """Garante que o payload é uma string de bits com tamanho múltiplo de 8."""
-    if not isinstance(bits, str) or set(bits) - {"0", "1"}:
-        raise ValueError("O trem de bits deve ser uma string de '0' e '1'.")
-    if len(bits) % TAM_BYTE != 0:
-        raise ValueError("O payload deve ter número de bits múltiplo de 8.")
-
 # Enquadramento: flags com inserção de bytes (byte stuffing)
 def byte_stuffing_TX(cargaUtil : str, tam_max_quadro : int) -> list[str]:
     """
     TX: quadro = FLAG + dados + FLAG. Se um byte dos dados for igual à FLAG ou
     ao ESC, insere-se um ESC antes dele.
     """
-    _validar_payload(cargaUtil)
+    
     if tam_max_quadro < 1:
         raise ValueError("tam_max_quadro deve ser pelo menos 1 byte.")
     
