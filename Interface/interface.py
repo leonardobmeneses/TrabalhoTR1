@@ -5,12 +5,13 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 def aoClicar(
-    botao, entrada, seletor, controleRuido,
+    botao, entrada, seletor, seletorPortadora, controleRuido,
     resultado, textoTX, textoRX, bitsTX, bitsRX,
     sinalTX, sinalRX
 ):
     mensagem = entrada.get_text()
     modulacao = seletor.get_active_text()
+    portadora = seletorPortadora.get_active_text()
     desvio_padrao = controleRuido.get_value()
 
     textoTX.set_text(mensagem)
@@ -26,6 +27,7 @@ def aoClicar(
         dados = transmitirMensagem(
             mensagem,
             modulacao,
+            portadora,
             media=0.0,
             desvio_padrao=desvio_padrao,
             detalhes=True
@@ -98,6 +100,25 @@ def iniciarInterface():
     seletor.set_active(0)
 
     caixaConfiguracoes.pack_start(seletor, False, False, 0)
+
+    # Selecao da modulacao por portadora
+    rotuloPortadora = Gtk.Label(
+        label="Modulacao por portadora (Nenhuma = so banda-base):"
+    )
+
+    caixaConfiguracoes.pack_start(rotuloPortadora, False, False, 0)
+
+    seletorPortadora = Gtk.ComboBoxText()
+
+    seletorPortadora.append_text("Nenhuma")
+    seletorPortadora.append_text("ASK")
+    seletorPortadora.append_text("FSK")
+    seletorPortadora.append_text("8PSK")
+    seletorPortadora.append_text("32-QAM")
+
+    seletorPortadora.set_active(0)
+
+    caixaConfiguracoes.pack_start(seletorPortadora, False, False, 0)
 
     # Configuracao do ruido
     rotuloRuido = Gtk.Label(
@@ -256,6 +277,7 @@ def iniciarInterface():
         aoClicar,
         entrada,
         seletor,
+        seletorPortadora,
         controleRuido,
         resultado,
         textoTX,
