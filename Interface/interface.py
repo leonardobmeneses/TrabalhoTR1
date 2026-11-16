@@ -55,6 +55,19 @@ def aoClicar(
 
         resultado.set_text("Erro: " + str(erro))
 
+def aoMudarPortadora(seletorPortadora, seletor, avisoPortadora):
+    # Com portadora, o modulador recebe o sinal em NRZ (ligacao "NRZ" da Figura 1
+    # do enunciado). Por isso a banda-base fica travada em NRZPolar
+    if seletorPortadora.get_active_text() != "Nenhuma":
+        seletor.set_active(0)
+        seletor.set_sensitive(False)
+        avisoPortadora.set_text(
+            "Com portadora, a banda-base usada e NRZ-Polar (o modulador recebe o sinal NRZ)."
+        )
+    else:
+        seletor.set_sensitive(True)
+        avisoPortadora.set_text("")
+
 def iniciarInterface():
     janela = Gtk.Window(title="Simulador TR1")
     janela.set_default_size(1500, 750)
@@ -119,6 +132,18 @@ def iniciarInterface():
     seletorPortadora.set_active(0)
 
     caixaConfiguracoes.pack_start(seletorPortadora, False, False, 0)
+
+    # Aviso que aparece quando uma portadora e escolhida
+    avisoPortadora = Gtk.Label(label="")
+    caixaConfiguracoes.pack_start(avisoPortadora, False, False, 0)
+
+    # Sempre que a portadora mudar, trava ou libera o seletor de banda-base
+    seletorPortadora.connect(
+        "changed",
+        aoMudarPortadora,
+        seletor,
+        avisoPortadora
+    )
 
     # Configuracao do ruido
     rotuloRuido = Gtk.Label(
