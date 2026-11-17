@@ -1,4 +1,5 @@
 from matplotlib.figure import Figure
+from matplotlib.collections import LineCollection
 
 
 def criarGrafico():
@@ -36,27 +37,31 @@ def atualizarGrafico(
     sinalRX: list[float],
     amostragem: int,
     portadora: str,
-    maxIntervalos: int = 8,
 ):
-    """Mostra todas as amostras de uma previa de ate oito bits ou simbolos."""
+    """Mostra todas as amostras da transmissao, sem limitar bits ou simbolos."""
     limparGrafico(grafico)
     canvas, eixos = grafico
 
-    limite = min(len(sinalTX), len(sinalRX), amostragem * maxIntervalos)
-    indices = list(range(limite))
-
     for eixo, sinal, cor in zip(eixos, [sinalTX, sinalRX], ["tab:blue", "tab:orange"]):
+        indices = range(len(sinal))
         if portadora == "Nenhuma":
-            eixo.step(indices, sinal[:limite], where="post", color=cor)
+            eixo.step(indices, sinal, where="post", color=cor)
         else:
-            eixo.plot(indices, sinal[:limite], color=cor)
+            eixo.plot(indices, sinal, color=cor)
 
-        # Marca os intervalos, sem reduzir o sinal a uma unica amostra por bit.
-        for inicio in range(0, limite, amostragem):
-            eixo.axvline(inicio, color="gray", linestyle="--", alpha=0.3)
+        # Uma unica colecao marca os intervalos, mesmo em mensagens longas.
+        marcadores = LineCollection(
+            [((inicio, 0), (inicio, 1)) for inicio in range(0, len(sinal), amostragem)],
+            transform=eixo.get_xaxis_transform(),
+            colors="gray",
+            linestyles="--",
+            alpha=0.3,
+        )
+        eixo.add_collection(marcadores, autolim=False)
 
     unidade = "símbolo" if portadora in ("8PSK", "32-QAM") else "bit"
-    eixos[0].set_title(f"TX — prévia de até {maxIntervalos} intervalos")
+    eixos[0].set_title("Transmitido — TX (sinal completo)")
+    eixos[1].set_title("Recebido — RX (sinal completo)")
     eixos[1].set_xlabel(
         f"Índice da amostra ({amostragem} amostras por {unidade})"
     )
