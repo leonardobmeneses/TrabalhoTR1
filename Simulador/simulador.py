@@ -533,7 +533,10 @@ def transmitirMensagem(
             "quadroRX": " | ".join(quadrosRecebidos),
             "verificacao": " | ".join(relatorio),
             "sinalTX": visualTX,
-            "sinalRX": visualRX
+            "sinalRX": visualRX,
+            "amostrasTX": sinalTX,
+            "amostrasRX": sinalRX,
+            "amostragem": amostragem
         }
 
     return mensagemRecebida

@@ -5,12 +5,9 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 from Simulador.simulador import transmitirMensagem
+from Interface.grafico import criarGrafico, limparGrafico, atualizarGrafico
 
-
-# ==========================================================
 # FUNCOES AUXILIARES DA INTERFACE
-# ==========================================================
-
 def criarRotulo(texto, largura=55):
     """
     Cria um rotulo que permite selecionar e copiar
@@ -48,11 +45,7 @@ def criarGridTXRX():
 
     return grid
 
-
-# ==========================================================
 # ALTERACAO DA MODULACAO POR PORTADORA
-# ==========================================================
-
 def aoMudarPortadora(
     seletorPortadora,
     seletor,
@@ -80,10 +73,7 @@ def aoMudarPortadora(
         avisoPortadora.set_text("")
 
 
-# ==========================================================
 # EVENTO DO BOTAO ENVIAR
-# ==========================================================
-
 def aoClicar(
     botao,
     entrada,
@@ -104,7 +94,8 @@ def aoClicar(
     verificacao,
     sinalTX,
     sinalRX,
-    descricaoSinal
+    descricaoSinal,
+    grafico
 ):
 
     # Recupera as configuracoes selecionadas
@@ -137,6 +128,7 @@ def aoClicar(
 
     descricaoSinal.set_text("")
     resultado.set_text("Processando transmissao...")
+    limparGrafico(grafico)
 
     try:
 
@@ -153,20 +145,20 @@ def aoClicar(
             deteccao=deteccao
         )
 
-        # ------------------------------------------
         # APLICACAO DE REDE
-        # ------------------------------------------
-
         textoTX.set_text(dados["textoTX"])
         textoRX.set_text(dados["textoRX"])
-
+        atualizarGrafico(
+            grafico,
+            dados["amostrasTX"],
+            dados["amostrasRX"],
+            dados["amostragem"],
+            portadora
+            )
         bitsTX.set_text(dados["bitsTX"])
         bitsRX.set_text(dados["bitsRX"])
 
-        # ------------------------------------------
         # CAMADA DE ENLACE
-        # ------------------------------------------
-
         if enquadramento == "Nenhum" and deteccao == "Nenhuma":
 
             quadroTX.set_text("Sem enquadramento")
@@ -182,10 +174,7 @@ def aoClicar(
             + dados["verificacao"]
         )
 
-        # ------------------------------------------
         # CAMADA FISICA
-        # ------------------------------------------
-
         if portadora == "Nenhuma":
 
             if modulacao == "Manchester":
@@ -212,10 +201,7 @@ def aoClicar(
         sinalTX.set_text(dados["sinalTX"])
         sinalRX.set_text(dados["sinalRX"])
 
-        # ------------------------------------------
         # RESULTADO FINAL
-        # ------------------------------------------
-
         resultado.set_text(
             "Mensagem recebida: " + dados["textoRX"]
         )
@@ -239,16 +225,10 @@ def aoClicar(
         resultado.set_text("Erro: " + str(erro))
 
 
-# ==========================================================
 # INICIALIZACAO DA INTERFACE
-# ==========================================================
-
 def iniciarInterface():
 
-    # ------------------------------------------------------
     # JANELA PRINCIPAL
-    # ------------------------------------------------------
-
     janela = Gtk.Window(title="Simulador TR1")
 
     janela.set_default_size(1500, 750)
@@ -288,10 +268,7 @@ def iniciarInterface():
 
     caixa.pack_start(entrada, False, False, 0)
 
-    # ======================================================
     # CONFIGURACAO GERAL
-    # ======================================================
-
     frameConfiguracoes = Gtk.Frame(
         label="Configuracao geral"
     )
@@ -308,10 +285,7 @@ def iniciarInterface():
     caixaConfiguracoes.set_border_width(10)
     frameConfiguracoes.add(caixaConfiguracoes)
 
-    # ------------------------------------------------------
     # CODIFICACAO BANDA-BASE
-    # ------------------------------------------------------
-
     rotuloBandaBase = Gtk.Label(
         label="Codificacao banda-base:"
     )
@@ -332,10 +306,7 @@ def iniciarInterface():
         seletor, False, False, 0
     )
 
-    # ------------------------------------------------------
     # MODULACAO POR PORTADORA
-    # ------------------------------------------------------
-
     rotuloPortadora = Gtk.Label(
         label="Modulacao por portadora:"
     )
@@ -373,10 +344,8 @@ def iniciarInterface():
         avisoPortadora
     )
 
-    # ------------------------------------------------------
-    # ENQUADRAMENTO
-    # ------------------------------------------------------
 
+    # ENQUADRAMENTO
     rotuloEnquadramento = Gtk.Label(
         label="Tipo de enquadramento:"
     )
@@ -399,10 +368,7 @@ def iniciarInterface():
         seletorEnquadramento, False, False, 0
     )
 
-    # ------------------------------------------------------
     # TAMANHO MAXIMO DA CARGA UTIL
-    # ------------------------------------------------------
-
     rotuloQuadro = Gtk.Label(
         label="Tamanho maximo da carga util por quadro (bytes):"
     )
@@ -421,10 +387,7 @@ def iniciarInterface():
         controleQuadro, False, False, 0
     )
 
-    # ------------------------------------------------------
     # DETECCAO OU CORRECAO DE ERROS
-    # ------------------------------------------------------
-
     rotuloDeteccao = Gtk.Label(
         label="Tipo de deteccao ou correcao de erros:"
     )
@@ -447,10 +410,8 @@ def iniciarInterface():
         seletorDeteccao, False, False, 0
     )
 
-    # ------------------------------------------------------
-    # RUIDO AWGN: media (x) e desvio padrao (sigma)
-    # ------------------------------------------------------
 
+    # RUIDO AWGN: media (x) e desvio padrao (sigma)
     rotuloMedia = Gtk.Label(
         label="Media do ruido AWGN (V):"
     )
@@ -487,10 +448,7 @@ def iniciarInterface():
         controleRuido, False, False, 0
     )
 
-    # ======================================================
     # APLICACAO DE REDE
-    # ======================================================
-
     frameAplicacao = Gtk.Frame(
         label="Aplicacao de rede"
     )
@@ -527,10 +485,8 @@ def iniciarInterface():
     gridAplicacao.attach(bitsTX, 0, 2, 1, 1)
     gridAplicacao.attach(bitsRX, 1, 2, 1, 1)
 
-    # ======================================================
-    # CAMADA DE ENLACE
-    # ======================================================
 
+    # CAMADA DE ENLACE
     frameEnlace = Gtk.Frame(
         label="Camada de Enlace"
     )
@@ -562,10 +518,7 @@ def iniciarInterface():
 
     gridEnlace.attach(verificacao, 0, 2, 2, 1)
 
-    # ======================================================
     # CAMADA FISICA
-    # ======================================================
-
     frameFisica = Gtk.Frame(
         label="Camada Fisica"
     )
@@ -600,11 +553,11 @@ def iniciarInterface():
 
     gridFisica.attach(sinalTX, 0, 2, 1, 1)
     gridFisica.attach(sinalRX, 1, 2, 1, 1)
+    grafico = criarGrafico()
+    gridFisica.attach(grafico[0], 0, 3, 2, 1)
 
-    # ======================================================
+
     # BOTAO DE ENVIO E RESULTADO
-    # ======================================================
-
     resultado = criarRotulo(
         "Aguardando mensagem..."
     )
@@ -632,7 +585,8 @@ def iniciarInterface():
         verificacao,
         sinalTX,
         sinalRX,
-        descricaoSinal
+        descricaoSinal,
+        grafico
     )
 
     caixa.pack_start(
@@ -643,9 +597,6 @@ def iniciarInterface():
         resultado, False, False, 0
     )
 
-    # ======================================================
     # EXIBIR INTERFACE
-    # ======================================================
-
     janela.show_all()
     Gtk.main()
