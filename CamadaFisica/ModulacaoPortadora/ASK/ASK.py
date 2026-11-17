@@ -6,7 +6,7 @@ def modularASK(
     amplitude: float = 1.0,         #altura da onda quando o bit for 1
     frequencia: int = 2,            #quantas ondas completas cabem dentro de um bit
     amostragem: int = 100           #quantas amostras representam um bit
-) -> list[float]:
+):
 
     if not bits:
         raise ValueError("A lista de bits nao pode estar vazia.")
@@ -44,7 +44,7 @@ def demodularASK(
     amplitude: float = 1.0,
     frequencia: int = 2,
     amostragem: int = 100
-) -> list[int]:
+):
 
     if not sinal:
         raise ValueError("O sinal nao pode estar vazio.")

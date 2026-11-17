@@ -1,12 +1,12 @@
 TAM_BYTE = 8
 # Funções auxiliares
-def inteiro_para_bits(valor : int, n_bits=TAM_BYTE) -> str:
+def inteiro_para_bits(valor : int, n_bits=TAM_BYTE):
     """Converte um inteiro em string de n_bits bits (MSB primeiro)."""
     if valor < 0 or valor >= 2 ** n_bits:
         raise ValueError("Valor não cabe em {} bits.".format(n_bits))
     return format(valor, "0{}b".format(n_bits))
 
-def bits_para_inteiro(bits : str) -> int:
+def bits_para_inteiro(bits : str):
     """Converte uma string de bits (MSB primeiro) em inteiro."""
     return int(bits, 2) if bits else 0
 
@@ -33,7 +33,7 @@ def contagem_caracteres_TX(cargaUtil : str, tam_max_quadro : int) -> list[str]:
         quadros.append(inteiro_para_bits(contagem) + dados)
     return quadros
 
-def contagem_caracteres_RX(fluxo : list[str]) -> str:
+def contagem_caracteres_RX(fluxo : list[str]):
     """
     contagem_caracteres_RX: Recebe os quadros e remove o cabeçalho.
     Retorna a cargaUtil. Lança ValueError se contagem for inválida.

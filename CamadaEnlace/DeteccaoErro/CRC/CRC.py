@@ -1,7 +1,7 @@
 GERADOR = "100000100110000010001110110110111"   # x^32 + x^26 + ... + 1 (0x104C11DB7)
 TAM_CRC = 32
 
-def _resto_crc(bits : str) -> str:
+def _resto_crc(bits : str):
     """
     Divide (bits + 32 zeros) pelo gerador, módulo 2, e devolve o resto de 32 bits.
     """
@@ -12,7 +12,7 @@ def _resto_crc(bits : str) -> str:
                 dividendo[i + j] = str(int(dividendo[i + j]) ^ int(GERADOR[j]))   # XOR
     return "".join(dividendo[-TAM_CRC:])
 
-def crc_TX(quadros : list[str]) -> list[str]:
+def crc_TX(quadros : list[str]):
     """TX: calcula o CRC-32 de cada quadro e o anexa ao final."""
     saida = []
     for quadro in quadros:
@@ -22,7 +22,7 @@ def crc_TX(quadros : list[str]) -> list[str]:
     return saida
 
 
-def crc_RX(quadros : list[str]) -> list[str]:
+def crc_RX(quadros : list[str]):
     """
     RX: separa o CRC, recalcula sobre os dados e compara; devolve os quadros sem o CRC.
     """

@@ -5,7 +5,7 @@ NIVEIS = [-5, -3, -1, 1, 3, 5]      #valores possiveis de I e de Q (uma grade 6 
 NIVEL_MAXIMO = 5
 
 
-def montarConstelacao() -> list[tuple[int, int]]:
+def montarConstelacao():
     #monta os 32 pontos (I, Q): uma grade 6 x 6 = 36 pontos, tirando os 4 cantos = 32 pontos
     #a posicao do ponto na lista (0 a 31) eh o numero que os 5 bits representam
     pontos = []
@@ -20,7 +20,7 @@ def montarConstelacao() -> list[tuple[int, int]]:
 CONSTELACAO_32QAM = montarConstelacao()
 
 
-def bitsParaNumero(grupo: list[int]) -> int:
+def bitsParaNumero(grupo: list[int]):
     #converte uma lista de bits em numero, ex.: [0, 1, 0, 1, 1] -> 11
     numero = 0
     for bit in grupo:
@@ -28,7 +28,7 @@ def bitsParaNumero(grupo: list[int]) -> int:
     return numero
 
 
-def numeroParaBits(numero: int, quantidade: int) -> list[int]:
+def numeroParaBits(numero: int, quantidade: int):
     #converte um numero em uma lista de bits com tamanho fixo, ex.: (11, 5) -> [0, 1, 0, 1, 1]
     grupo = []
     for _ in range(quantidade):
@@ -42,7 +42,7 @@ def modular32QAM(
     amplitude: float = 1.0,         #tensao do nivel mais alto da grade (I ou Q igual a 5)
     frequencia: int = 2,            #quantas ondas completas cabem em um simbolo
     amostragem: int = 100           #quantas amostras representam um simbolo (5 bits)
-) -> list[float]:
+):
 
     if not bits:
         raise ValueError("A lista de bits nao pode estar vazia.")
@@ -88,7 +88,7 @@ def demodular32QAM(
     amplitude: float = 1.0,
     frequencia: int = 2,
     amostragem: int = 100
-) -> list[int]:
+):
 
     if not sinal:
         raise ValueError("O sinal nao pode estar vazio.")

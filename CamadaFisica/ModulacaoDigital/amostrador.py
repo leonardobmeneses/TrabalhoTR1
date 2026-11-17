@@ -1,7 +1,7 @@
 def amostradorSinal(                    #essa funcao vai fazer a amostragem do nosso sinal
     sinal: list[float],
     amostragem_por_bit: int = 100,    
-) -> list[float]:
+):
 
     if amostragem_por_bit <= 0:
         raise ValueError("A amostragem deve ser positiva")

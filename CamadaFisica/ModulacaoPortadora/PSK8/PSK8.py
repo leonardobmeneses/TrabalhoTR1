@@ -21,7 +21,7 @@ def modular8PSK(
     amplitude: float = 1.0,         #altura da onda (no PSK ela eh sempre a mesma)
     frequencia: int = 2,            #quantas ondas completas cabem em um simbolo (sempre a mesma)
     amostragem: int = 100           #quantas amostras representam um simbolo (3 bits)
-) -> list[float]:
+):
 
     if not bits:
         raise ValueError("A lista de bits nao pode estar vazia.")
@@ -63,7 +63,7 @@ def demodular8PSK(
     quantidade_bits: int,           #quantos bits foram enviados de verdade (para descartar o padding)
     frequencia: int = 2,
     amostragem: int = 100
-) -> list[int]:
+):
 
     if not sinal:
         raise ValueError("O sinal nao pode estar vazio.")

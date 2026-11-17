@@ -2,7 +2,7 @@ TAM_BYTE = 8                    # 1 "caractere" = 1 byte = 8 bits
 FLAG_BIT = "01111110"           # delimitador do bit stuffing
 
 # Função auxiliar para validar o trem de bits
-def _validar_payload(bits : str) -> None:
+def _validar_payload(bits : str):
     """Garante que o payload é uma string de bits com tamanho múltiplo de 8."""
     if not isinstance(bits, str) or set(bits) - {"0", "1"}:
         raise ValueError("O trem de bits deve ser uma string de '0' e '1'.")
@@ -12,7 +12,7 @@ def _validar_payload(bits : str) -> None:
 
 
 # Enquadramento: flags com inserção de bits (bit stuffing)
-def _inserir_bits(dados : str) -> str:
+def _inserir_bits(dados : str):
     """Insere um '0' depois de cada sequência de cinco '1' consecutivos."""
     saida = ""
     uns = 0
@@ -28,7 +28,7 @@ def _inserir_bits(dados : str) -> str:
     return saida
 
 
-def _remover_bits(dados : str) -> str:
+def _remover_bits(dados : str):
     """Remove o '0' que segue cada sequência de cinco '1' consecutivos."""
     saida = ""
     uns = 0
@@ -49,7 +49,7 @@ def _remover_bits(dados : str) -> str:
     return saida
 
 
-def bit_stuffing_TX(bits : str, tam_max_quadro : int) -> list[str]:
+def bit_stuffing_TX(bits : str, tam_max_quadro : int):
     """TX: quadro = FLAG + dados com bit stuffing + FLAG."""
     _validar_payload(bits)
 
@@ -62,7 +62,7 @@ def bit_stuffing_TX(bits : str, tam_max_quadro : int) -> list[str]:
             for dados in [bits[i:i + tam] for i in range(0, len(bits), tam)]]
 
 
-def bit_stuffing_RX(fluxo : list[str]) -> str:
+def bit_stuffing_RX(fluxo : list[str]):
     """RX: valida as flags de cada quadro, remove-as e desfaz o bit stuffing."""
     if not fluxo:
         raise ValueError("Fluxo vazio.")

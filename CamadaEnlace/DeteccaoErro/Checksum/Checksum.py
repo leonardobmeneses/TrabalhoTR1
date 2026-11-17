@@ -1,10 +1,10 @@
 # Função auxiliar para soma de bits
-def somar_bits(a : str, b : str, n_bits : int) -> str:
+def somar_bits(a : str, b : str, n_bits : int):
     soma = (int(a, 2) + int(b, 2)) & ((1 << n_bits) - 1)   # descarta o carry final
     return format(soma, f"0{n_bits}b")
 
 # Função auxiliar para inverter bits
-def inverter_bits(bits : str) -> str:
+def inverter_bits(bits : str):
     return bits.translate(str.maketrans("01", "10"))
 
 # Função auxiliar para dividir o quadro em duas metades de mesmo tamanho
@@ -17,7 +17,7 @@ def _dividir_em_metades(quadro : str) -> tuple[str, str]:
     n = (len(quadro) + 1) // 2
     return quadro[:n], quadro[n:].ljust(n, "0")
 
-def checksum_TX(quadros : list[str]) -> list[str]:
+def checksum_TX(quadros : list[str]):
     """
     TX: divide cada quadro pela metade e calcula o checksum.
     Depois, adiciona o checksum ao final do quadro.
@@ -32,7 +32,7 @@ def checksum_TX(quadros : list[str]) -> list[str]:
 
     return saida
 
-def checksum_RX(quadros : list[str]) -> list[str]:
+def checksum_RX(quadros : list[str]):
     """
     RX: faz a soma das três partes (início + fim + checksum).
     Depois, inverte elas e ao fim, se resultado = 0, funcionou.

@@ -7,7 +7,7 @@ def modularFSK(
     frequencia0: int = 2,           #quantas ondas completas cabem em um bit quando o bit for 0 (onda devagar)
     frequencia1: int = 4,           #quantas ondas completas cabem em um bit quando o bit for 1 (onda rapida)
     amostragem: int = 100           #quantas amostras representam um bit
-) -> list[float]:
+):
 
     if not bits:
         raise ValueError("A lista de bits nao pode estar vazia.")
@@ -48,7 +48,7 @@ def demodularFSK(
     frequencia0: int = 2,
     frequencia1: int = 4,
     amostragem: int = 100
-) -> list[int]:
+):
 
     if not sinal:
         raise ValueError("O sinal nao pode estar vazio.")

@@ -5,7 +5,7 @@
 
 
 # Funcoes auxiliares
-def _validar_bits(bits : str) -> None:
+def _validar_bits(bits : str):
     """Garante que a entrada eh uma string nao vazia de '0' e '1'."""
     if not isinstance(bits, str) or not bits or set(bits) - {"0", "1"}:
         raise ValueError("A entrada deve ser uma string nao vazia de '0' e '1'.")
@@ -17,14 +17,14 @@ def _eh_potencia_de_2(numero : int) -> bool:
         potencia *= 2
     return potencia == numero
 
-def _quantidade_bits_paridade(m : int) -> int:
+def _quantidade_bits_paridade(m : int):
     """Menor r tal que 2^r >= m + r + 1 (m = quantidade de bits de dados)."""
     r = 0
     while 2 ** r < m + r + 1:
         r += 1
     return r
 
-def _paridade_do_grupo(palavra : list[str], p : int) -> int:
+def _paridade_do_grupo(palavra : list[str], p : int):
     """
     Soma (em paridade) os bits das posicoes vigiadas pelo bit de paridade p.
     A posicao 'pos' eh vigiada por p quando, em binario, 'pos' tem o bit p ligado
@@ -72,7 +72,7 @@ def hamming_TX(dados : str) -> str:
 
 
 # Codigo de Hamming - receptor
-def hamming_RX(codigo : str) -> tuple[str, int]:
+def hamming_RX(codigo : str):
     """
     hamming_RX: recebe a palavra de codigo, corrige ate 1 bit errado
     e devolve (dados, posicao_corrigida).

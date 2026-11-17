@@ -2,7 +2,7 @@ def codificarManchester(
     bits: list[int],
     amplitude: float = 1.0,
     amostragem: int = 100
-) -> list[float]:
+):
 
     if not bits:
         raise ValueError("A lista de bits nao pode estar vazia.")
@@ -38,7 +38,7 @@ def codificarManchester(
 def decodificadorManchester(
     amostras: list[float],
     limite: float = 0.0
-) -> list[int]:
+):
 
     if not amostras:
         raise ValueError("A lista de amostras nao pode estar vazia.")

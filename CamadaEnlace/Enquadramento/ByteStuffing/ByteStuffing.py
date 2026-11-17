@@ -4,7 +4,7 @@ ESC_BYTE = "01111101"           # 0x7D: byte de escape do byte stuffing
 
 
 # Enquadramento: flags com inserção de bytes (byte stuffing)
-def byte_stuffing_TX(cargaUtil : str, tam_max_quadro : int) -> list[str]:
+def byte_stuffing_TX(cargaUtil : str, tam_max_quadro : int):
     """
     TX: quadro = FLAG + dados + FLAG. Se um byte dos dados for igual à FLAG ou
     ao ESC, insere-se um ESC antes dele.
@@ -26,7 +26,7 @@ def byte_stuffing_TX(cargaUtil : str, tam_max_quadro : int) -> list[str]:
     return quadros
 
 
-def byte_stuffing_RX(fluxo : list[str]) -> str:
+def byte_stuffing_RX(fluxo : list[str]):
     """
     RX: percorre o fluxo byte a byte. FLAG abre/fecha quadro; ESC faz o byte
     seguinte ser tratado como dado. Retorna a lista de payloads.

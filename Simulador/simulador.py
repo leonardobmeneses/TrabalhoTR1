@@ -54,7 +54,7 @@ def resumirSinalBandaBase(
     modulacao: str,
     amostragem: int = 100,
     maxBits: int = 16
-) -> str:
+):
 
     valores = []
 
@@ -88,7 +88,7 @@ def modularPortadora(
     portadora: str,
     amplitude: float,
     amostragem: int
-) -> list[float]:
+):
 
     if portadora == "ASK":
         return modularASK(
@@ -131,7 +131,7 @@ def demodularPortadora(
     quantidade_bits: int,
     amplitude: float,
     amostragem: int
-) -> list[int]:
+):
 
     if portadora == "ASK":
         return demodularASK(
@@ -173,7 +173,7 @@ def transmitirBits(
     portadora: str = "Nenhuma",
     media: float = 0.0,
     desvio_padrao: float = 0.0
-) -> dict:
+):
 
     amplitude = 1.0
     amostragem = 100
@@ -283,7 +283,7 @@ def enquadrarTX(
     bitsString: str,
     enquadramento: str,
     tam_max_quadro: int
-) -> list[str]:
+):
     # Divide a carga util em quadros de acordo com o protocolo escolhido.
     # Sem enquadramento, a mensagem inteira e tratada como um unico quadro.
     if enquadramento == "Bit stuffing":
@@ -309,7 +309,7 @@ def enquadrarTX(
 def desenquadrarRX(
     quadros: list[str | None],
     enquadramento: str
-) -> tuple[str, list[int]]:
+):
     # Remove o enquadramento e devolve (carga util, numeros dos quadros descartados).
     # Posicoes com None sao quadros que ja foram descartados pela deteccao de erros.
     validos = [quadro for quadro in quadros if quadro is not None]
@@ -357,7 +357,7 @@ def desenquadrarRX(
 def aplicarDeteccaoTX(
     quadros: list[str],
     deteccao: str
-) -> list[str]:
+):
     # Anexa a cada quadro o codigo de deteccao (EDC) ou, no Hamming,
     # transforma o quadro em uma palavra de codigo com bits de paridade.
     if deteccao == "Bit de paridade":
@@ -383,7 +383,7 @@ def aplicarDeteccaoTX(
 def verificarDeteccaoRX(
     quadros: list[str],
     deteccao: str
-) -> tuple[list[str | None], list[str]]:
+):
     # Confere cada quadro recebido.
     # Quadro correto: o codigo e removido e o quadro segue para o desenquadramento.
     # Quadro com erro detectado: e descartado (vira None) e o descarte e sinalizado.
@@ -439,7 +439,7 @@ def transmitirMensagem(
     enquadramento: str = "Nenhum",
     tam_max_quadro: int = 1,
     deteccao: str = "Nenhuma"
-) -> str | dict[str, str]:
+):
 
     amostragem = 100
 

@@ -1,7 +1,7 @@
 TAM_BYTE = 8
 
 
-def entrelacamento_TX(cargaUtil: str, tam_max_quadro: int) -> list[str]:
+def entrelacamento_TX(cargaUtil: str, tam_max_quadro: int):
     if tam_max_quadro < 1:
         raise ValueError("tam_max_quadro deve ser pelo menos 1 byte.")
     tam_linha = tam_max_quadro * TAM_BYTE
@@ -22,7 +22,7 @@ def entrelacamento_TX(cargaUtil: str, tam_max_quadro: int) -> list[str]:
     matriz.append(paridade)
     return matriz
 
-def entrelacamento_RX(fluxo: list[str]) -> str:
+def entrelacamento_RX(fluxo: list[str]):
     if not fluxo:
         return ""
     # Nao modifica a lista original

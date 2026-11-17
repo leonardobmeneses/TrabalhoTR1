@@ -231,7 +231,7 @@ def iniciarInterface():
     # JANELA PRINCIPAL
     janela = Gtk.Window(title="Simulador TR1")
 
-    janela.set_default_size(1500, 750)
+    janela.set_default_size(1700, 780)
     janela.connect("destroy", Gtk.main_quit)
 
     # Permite rolar a janela caso existam muitos campos

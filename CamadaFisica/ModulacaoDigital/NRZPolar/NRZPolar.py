@@ -2,7 +2,7 @@ def codificarNRZPolar(
     bits : list[int],
     amplitude : float = 1.0,            #se o valor nao for passado, vai ser 1
     amostragem : int = 100,             #se o valor nao for passado, vai ser 100
-)->list[float]:
+):
 
     if not bits:
         raise ValueError("O campo nao pode estar vazio.")
@@ -31,7 +31,7 @@ def codificarNRZPolar(
 def decodificadorNRZPolar(
     amostras : list[float],
     limite : float = 0.0   
-)->list[int]:
+):
 
     if not amostras:
         raise ValueError("Devem existir amostras.")

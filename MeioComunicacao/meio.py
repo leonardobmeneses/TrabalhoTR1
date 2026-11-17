@@ -4,7 +4,7 @@ def adicionarRuido(
     sinal: list[float],             #lista de sinais fisicos transmitidos em volts
     media: float,                
     desvioPadrao: float
-) -> list[float]:
+):
 
     sinal_recebido = []         
     for valor in sinal:

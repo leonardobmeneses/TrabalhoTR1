@@ -2,7 +2,7 @@ def codificarBipolar(
     bits: list[int],
     amplitude: float = 1.0,
     amostragem: int = 100
-)-> list[float]:
+):
 
     if not bits:
         raise ValueError("Deve ser enviada uma lista de bits.")
@@ -35,7 +35,7 @@ def codificarBipolar(
 def decodificadorBipolar(
     amostras: list[float],
     amplitude: float = 1.0,
-)-> list[int]:
+):
 
     limite = amplitude / 2
 

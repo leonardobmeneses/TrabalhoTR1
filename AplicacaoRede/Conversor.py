@@ -1,11 +1,11 @@
-def textoParaBits(texto : str) -> str:
+def textoParaBits(texto : str):
     dados = texto.encode("ascii")       #transformo o texto em bits conforme a tabela ASCII
     bits = ""
     for byte in dados:
         bits += format(byte, "08b")     #tranformo cada caractere em byte ou 8 bits
     return bits
 
-def bitsParaTexto(bits : str) -> str:
+def bitsParaTexto(bits : str):
     if len(bits) % 8 != 0:
         raise ValueError("Devem ser enviados bytes.")    
     texto = ""
