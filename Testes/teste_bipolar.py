@@ -3,7 +3,7 @@ from CamadaFisica.ModulacaoDigital.Bipolar.Bipolar import (
     decodificadorBipolar
 )
 
-from CamadaFisica.amostrador import amostradorSinal
+from CamadaFisica.ModulacaoDigital.amostrador import amostradorSinal
 import random
 from MeioComunicacao.meio import adicionarRuido
 
@@ -23,7 +23,7 @@ def main():
     # Decodificador
     bitsRecebidos = decodificadorBipolar(
         amostras,
-        limite=amplitude / 2
+        amplitude=amplitude
     )
 
     print("Bits transmitidos:", bits)
@@ -50,7 +50,7 @@ def main():
 
     bitsRecebidos = decodificadorBipolar(
         amostrasRecebidas,
-        limite=amplitude / 2
+        amplitude=amplitude
     )
 
     print("\nTeste Bipolar com ruido")

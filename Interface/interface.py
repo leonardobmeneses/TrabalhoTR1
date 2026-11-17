@@ -91,6 +91,8 @@ def aoClicar(
     seletorPortadora,
     seletorEnquadramento,
     controleQuadro,
+    seletorDeteccao,
+    controleMedia,
     controleRuido,
     resultado,
     textoTX,
@@ -99,6 +101,7 @@ def aoClicar(
     bitsRX,
     quadroTX,
     quadroRX,
+    verificacao,
     sinalTX,
     sinalRX,
     descricaoSinal
@@ -113,6 +116,9 @@ def aoClicar(
     enquadramento = seletorEnquadramento.get_active_text()
     tam_max_quadro = controleQuadro.get_value_as_int()
 
+    deteccao = seletorDeteccao.get_active_text()
+
+    media = controleMedia.get_value()
     desvio_padrao = controleRuido.get_value()
 
     # Limpa os resultados anteriores
@@ -124,6 +130,7 @@ def aoClicar(
 
     quadroTX.set_text("")
     quadroRX.set_text("")
+    verificacao.set_text("")
 
     sinalTX.set_text("")
     sinalRX.set_text("")
@@ -138,11 +145,12 @@ def aoClicar(
             mensagem,
             modulacao,
             portadora,
-            media=0.0,
+            media=media,
             desvio_padrao=desvio_padrao,
             detalhes=True,
             enquadramento=enquadramento,
-            tam_max_quadro=tam_max_quadro
+            tam_max_quadro=tam_max_quadro,
+            deteccao=deteccao
         )
 
         # ------------------------------------------
@@ -159,7 +167,7 @@ def aoClicar(
         # CAMADA DE ENLACE
         # ------------------------------------------
 
-        if enquadramento == "Nenhum":
+        if enquadramento == "Nenhum" and deteccao == "Nenhuma":
 
             quadroTX.set_text("Sem enquadramento")
             quadroRX.set_text("Sem enquadramento")
@@ -168,6 +176,11 @@ def aoClicar(
 
             quadroTX.set_text(dados["quadroTX"])
             quadroRX.set_text(dados["quadroRX"])
+
+        verificacao.set_text(
+            "Verificacao no receptor (" + deteccao + "): "
+            + dados["verificacao"]
+        )
 
         # ------------------------------------------
         # CAMADA FISICA
@@ -214,6 +227,7 @@ def aoClicar(
 
         quadroTX.set_text("Transmissao nao concluida")
         quadroRX.set_text("Recepcao nao concluida")
+        verificacao.set_text("Verificacao nao concluida")
 
         sinalTX.set_text("Dados indisponiveis")
         sinalRX.set_text("Dados indisponiveis")
@@ -408,8 +422,52 @@ def iniciarInterface():
     )
 
     # ------------------------------------------------------
-    # RUIDO AWGN
+    # DETECCAO OU CORRECAO DE ERROS
     # ------------------------------------------------------
+
+    rotuloDeteccao = Gtk.Label(
+        label="Tipo de deteccao ou correcao de erros:"
+    )
+
+    caixaConfiguracoes.pack_start(
+        rotuloDeteccao, False, False, 0
+    )
+
+    seletorDeteccao = Gtk.ComboBoxText()
+
+    seletorDeteccao.append_text("Nenhuma")
+    seletorDeteccao.append_text("Bit de paridade")
+    seletorDeteccao.append_text("Checksum")
+    seletorDeteccao.append_text("CRC-32")
+    seletorDeteccao.append_text("Hamming")
+
+    seletorDeteccao.set_active(0)
+
+    caixaConfiguracoes.pack_start(
+        seletorDeteccao, False, False, 0
+    )
+
+    # ------------------------------------------------------
+    # RUIDO AWGN: media (x) e desvio padrao (sigma)
+    # ------------------------------------------------------
+
+    rotuloMedia = Gtk.Label(
+        label="Media do ruido AWGN (V):"
+    )
+
+    caixaConfiguracoes.pack_start(
+        rotuloMedia, False, False, 0
+    )
+
+    controleMedia = Gtk.SpinButton.new_with_range(
+        -1.0, 1.0, 0.1
+    )
+
+    controleMedia.set_value(0.0)
+
+    caixaConfiguracoes.pack_start(
+        controleMedia, False, False, 0
+    )
 
     rotuloRuido = Gtk.Label(
         label="Desvio padrao do ruido AWGN (V):"
@@ -497,6 +555,13 @@ def iniciarInterface():
     gridEnlace.attach(quadroTX, 0, 1, 1, 1)
     gridEnlace.attach(quadroRX, 1, 1, 1, 1)
 
+    # Resultado da deteccao/correcao de cada quadro no receptor
+    verificacao = criarRotulo(
+        "Aguardando verificacao dos quadros...", 120
+    )
+
+    gridEnlace.attach(verificacao, 0, 2, 2, 1)
+
     # ======================================================
     # CAMADA FISICA
     # ======================================================
@@ -554,6 +619,8 @@ def iniciarInterface():
         seletorPortadora,
         seletorEnquadramento,
         controleQuadro,
+        seletorDeteccao,
+        controleMedia,
         controleRuido,
         resultado,
         textoTX,
@@ -562,6 +629,7 @@ def iniciarInterface():
         bitsRX,
         quadroTX,
         quadroRX,
+        verificacao,
         sinalTX,
         sinalRX,
         descricaoSinal
