@@ -1,102 +1,219 @@
 
 import gi
-from Simulador.simulador import transmitirMensagem
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
+from Simulador.simulador import transmitirMensagem
 
-def aoMudarPortadora(seletorPortadora, seletor, avisoPortadora):
+
+# ==========================================================
+# FUNCOES AUXILIARES DA INTERFACE
+# ==========================================================
+
+def criarRotulo(texto, largura=55):
+    """
+    Cria um rotulo que permite selecionar e copiar
+    os valores exibidos.
+    """
+    rotulo = Gtk.Label(label=texto)
+
+    rotulo.set_line_wrap(True)
+    rotulo.set_max_width_chars(largura)
+    rotulo.set_selectable(True)
+    rotulo.set_xalign(0.0)
+    rotulo.set_hexpand(True)
+
+    return rotulo
+
+
+def criarGridTXRX():
+    """
+    Cria uma grade com duas colunas:
+    transmissor e receptor.
+    """
+    grid = Gtk.Grid()
+
+    grid.set_column_spacing(20)
+    grid.set_row_spacing(10)
+    grid.set_border_width(10)
+    grid.set_column_homogeneous(True)
+    grid.set_hexpand(True)
+
+    tituloTX = Gtk.Label(label="Transmissor (TX)")
+    tituloRX = Gtk.Label(label="Receptor (RX)")
+
+    grid.attach(tituloTX, 0, 0, 1, 1)
+    grid.attach(tituloRX, 1, 0, 1, 1)
+
+    return grid
+
+
+# ==========================================================
+# ALTERACAO DA MODULACAO POR PORTADORA
+# ==========================================================
+
+def aoMudarPortadora(
+    seletorPortadora,
+    seletor,
+    avisoPortadora
+):
     portadora = seletorPortadora.get_active_text()
 
     if portadora != "Nenhuma":
-        # Mantem NRZ-Polar selecionado visualmente.
-        # Atenção: o simulador atual ainda envia os bits
-        # diretamente ao modulador por portadora.
+
+        # Mantem NRZ-Polar selecionado
         seletor.set_active(0)
         seletor.set_sensitive(False)
 
+        # A integracao efetiva entre NRZ e portadora
+        # ainda sera implementada no simulador.
         avisoPortadora.set_text(
-            "Portadora selecionada: NRZ-Polar fixado na interface. "
+            "Com portadora, NRZ-Polar fica selecionado. "
             "A integracao das duas etapas ainda esta pendente."
         )
 
     else:
+
+        # Libera a escolha entre as tres codificacoes
         seletor.set_sensitive(True)
         avisoPortadora.set_text("")
 
 
+# ==========================================================
+# EVENTO DO BOTAO ENVIAR
+# ==========================================================
+
 def aoClicar(
-    botao, entrada, seletor, seletorPortadora, controleRuido,
-    resultado, textoTX, textoRX, bitsTX, bitsRX,
-    sinalTX, sinalRX, descricaoSinal
+    botao,
+    entrada,
+    seletor,
+    seletorPortadora,
+    seletorEnquadramento,
+    controleQuadro,
+    controleRuido,
+    resultado,
+    textoTX,
+    textoRX,
+    bitsTX,
+    bitsRX,
+    quadroTX,
+    quadroRX,
+    sinalTX,
+    sinalRX,
+    descricaoSinal
 ):
-    # Captura os valores escolhidos pelo usuario
+
+    # Recupera as configuracoes selecionadas
     mensagem = entrada.get_text()
+
     modulacao = seletor.get_active_text()
     portadora = seletorPortadora.get_active_text()
+
+    enquadramento = seletorEnquadramento.get_active_text()
+    tam_max_quadro = controleQuadro.get_value_as_int()
+
     desvio_padrao = controleRuido.get_value()
 
-    textoTX.set_text(mensagem)
-
     # Limpa os resultados anteriores
+    textoTX.set_text(mensagem)
     textoRX.set_text("Aguardando recepcao...")
+
     bitsTX.set_text("")
     bitsRX.set_text("")
+
+    quadroTX.set_text("")
+    quadroRX.set_text("")
+
     sinalTX.set_text("")
     sinalRX.set_text("")
+
+    descricaoSinal.set_text("")
     resultado.set_text("Processando transmissao...")
 
     try:
+
+        # Executa o simulador completo
         dados = transmitirMensagem(
             mensagem,
             modulacao,
             portadora,
             media=0.0,
             desvio_padrao=desvio_padrao,
-            detalhes=True
+            detalhes=True,
+            enquadramento=enquadramento,
+            tam_max_quadro=tam_max_quadro
         )
 
-        # Aplicacao de rede
+        # ------------------------------------------
+        # APLICACAO DE REDE
+        # ------------------------------------------
+
         textoTX.set_text(dados["textoTX"])
         textoRX.set_text(dados["textoRX"])
 
         bitsTX.set_text(dados["bitsTX"])
         bitsRX.set_text(dados["bitsRX"])
 
-        # Identifica o tipo de sinal exibido
+        # ------------------------------------------
+        # CAMADA DE ENLACE
+        # ------------------------------------------
+
+        if enquadramento == "Nenhum":
+
+            quadroTX.set_text("Sem enquadramento")
+            quadroRX.set_text("Sem enquadramento")
+
+        else:
+
+            quadroTX.set_text(dados["quadroTX"])
+            quadroRX.set_text(dados["quadroRX"])
+
+        # ------------------------------------------
+        # CAMADA FISICA
+        # ------------------------------------------
+
         if portadora == "Nenhuma":
 
             if modulacao == "Manchester":
+
                 descricaoSinal.set_text(
-                    "Banda-base: duas amostras representativas "
-                    "por bit (V)"
+                    "Banda-base: duas amostras "
+                    "representativas por bit (V)"
                 )
 
             else:
+
                 descricaoSinal.set_text(
-                    "Banda-base: uma amostra representativa "
-                    "por bit (V)"
+                    "Banda-base: uma amostra "
+                    "representativa por bit (V)"
                 )
 
         else:
+
             descricaoSinal.set_text(
-                "Modulacao por portadora: primeiras "
-                "10 amostras da onda (V)"
+                "Modulacao por portadora: "
+                "primeiras 10 amostras da onda (V)"
             )
 
-        # Camada fisica
         sinalTX.set_text(dados["sinalTX"])
         sinalRX.set_text(dados["sinalRX"])
 
-        # Resultado final
+        # ------------------------------------------
+        # RESULTADO FINAL
+        # ------------------------------------------
+
         resultado.set_text(
             "Mensagem recebida: " + dados["textoRX"]
         )
 
     except (ValueError, UnicodeError) as erro:
+
         textoRX.set_text("Falha na recepcao")
         bitsRX.set_text("Dados indisponiveis")
+
+        quadroTX.set_text("Transmissao nao concluida")
+        quadroRX.set_text("Recepcao nao concluida")
 
         sinalTX.set_text("Dados indisponiveis")
         sinalRX.set_text("Dados indisponiveis")
@@ -108,11 +225,30 @@ def aoClicar(
         resultado.set_text("Erro: " + str(erro))
 
 
+# ==========================================================
+# INICIALIZACAO DA INTERFACE
+# ==========================================================
+
 def iniciarInterface():
+
+    # ------------------------------------------------------
     # JANELA PRINCIPAL
+    # ------------------------------------------------------
+
     janela = Gtk.Window(title="Simulador TR1")
+
     janela.set_default_size(1500, 750)
     janela.connect("destroy", Gtk.main_quit)
+
+    # Permite rolar a janela caso existam muitos campos
+    rolagem = Gtk.ScrolledWindow()
+
+    rolagem.set_policy(
+        Gtk.PolicyType.AUTOMATIC,
+        Gtk.PolicyType.AUTOMATIC
+    )
+
+    janela.add(rolagem)
 
     caixa = Gtk.Box(
         orientation=Gtk.Orientation.VERTICAL,
@@ -120,21 +256,28 @@ def iniciarInterface():
     )
 
     caixa.set_border_width(15)
-    janela.add(caixa)
+    rolagem.add(caixa)
 
-    texto = Gtk.Label(
+    # Titulo principal
+    titulo = Gtk.Label(
         label="Bem-vindo ao simulador de TR1!"
     )
 
-    caixa.pack_start(texto, False, False, 0)
+    caixa.pack_start(titulo, False, False, 0)
 
     # Entrada da mensagem
     entrada = Gtk.Entry()
-    entrada.set_placeholder_text("Digite sua mensagem...")
+
+    entrada.set_placeholder_text(
+        "Digite sua mensagem..."
+    )
 
     caixa.pack_start(entrada, False, False, 0)
 
+    # ======================================================
     # CONFIGURACAO GERAL
+    # ======================================================
+
     frameConfiguracoes = Gtk.Frame(
         label="Configuracao geral"
     )
@@ -151,7 +294,10 @@ def iniciarInterface():
     caixaConfiguracoes.set_border_width(10)
     frameConfiguracoes.add(caixaConfiguracoes)
 
-    # Seletor da codificacao banda-base
+    # ------------------------------------------------------
+    # CODIFICACAO BANDA-BASE
+    # ------------------------------------------------------
+
     rotuloBandaBase = Gtk.Label(
         label="Codificacao banda-base:"
     )
@@ -172,9 +318,12 @@ def iniciarInterface():
         seletor, False, False, 0
     )
 
-    # Seletor da modulacao por portadora
+    # ------------------------------------------------------
+    # MODULACAO POR PORTADORA
+    # ------------------------------------------------------
+
     rotuloPortadora = Gtk.Label(
-        label="Modulacao por portadora (Nenhuma = so banda-base):"
+        label="Modulacao por portadora:"
     )
 
     caixaConfiguracoes.pack_start(
@@ -195,7 +344,7 @@ def iniciarInterface():
         seletorPortadora, False, False, 0
     )
 
-    # Aviso da configuracao da portadora
+    # Aviso exibido quando uma portadora e escolhida
     avisoPortadora = Gtk.Label(label="")
     avisoPortadora.set_line_wrap(True)
 
@@ -203,7 +352,6 @@ def iniciarInterface():
         avisoPortadora, False, False, 0
     )
 
-    # Controla o seletor de banda-base
     seletorPortadora.connect(
         "changed",
         aoMudarPortadora,
@@ -211,7 +359,58 @@ def iniciarInterface():
         avisoPortadora
     )
 
-    # Configuracao do ruido AWGN
+    # ------------------------------------------------------
+    # ENQUADRAMENTO
+    # ------------------------------------------------------
+
+    rotuloEnquadramento = Gtk.Label(
+        label="Tipo de enquadramento:"
+    )
+
+    caixaConfiguracoes.pack_start(
+        rotuloEnquadramento, False, False, 0
+    )
+
+    seletorEnquadramento = Gtk.ComboBoxText()
+
+    seletorEnquadramento.append_text("Nenhum")
+    seletorEnquadramento.append_text("Bit stuffing")
+    seletorEnquadramento.append_text("Byte stuffing")
+    seletorEnquadramento.append_text("Contagem")
+    seletorEnquadramento.append_text("Entrelaçamento")
+
+    seletorEnquadramento.set_active(0)
+
+    caixaConfiguracoes.pack_start(
+        seletorEnquadramento, False, False, 0
+    )
+
+    # ------------------------------------------------------
+    # TAMANHO MAXIMO DA CARGA UTIL
+    # ------------------------------------------------------
+
+    rotuloQuadro = Gtk.Label(
+        label="Tamanho maximo da carga util por quadro (bytes):"
+    )
+
+    caixaConfiguracoes.pack_start(
+        rotuloQuadro, False, False, 0
+    )
+
+    controleQuadro = Gtk.SpinButton.new_with_range(
+        1, 255, 1
+    )
+
+    controleQuadro.set_value(1)
+
+    caixaConfiguracoes.pack_start(
+        controleQuadro, False, False, 0
+    )
+
+    # ------------------------------------------------------
+    # RUIDO AWGN
+    # ------------------------------------------------------
+
     rotuloRuido = Gtk.Label(
         label="Desvio padrao do ruido AWGN (V):"
     )
@@ -230,7 +429,10 @@ def iniciarInterface():
         controleRuido, False, False, 0
     )
 
+    # ======================================================
     # APLICACAO DE REDE
+    # ======================================================
+
     frameAplicacao = Gtk.Frame(
         label="Aplicacao de rede"
     )
@@ -239,66 +441,38 @@ def iniciarInterface():
         frameAplicacao, False, False, 0
     )
 
-    gridAplicacao = Gtk.Grid()
-
-    gridAplicacao.set_column_spacing(20)
-    gridAplicacao.set_row_spacing(10)
-    gridAplicacao.set_border_width(10)
-    gridAplicacao.set_column_homogeneous(True)
-    gridAplicacao.set_hexpand(True)
+    gridAplicacao = criarGridTXRX()
 
     frameAplicacao.add(gridAplicacao)
 
-    # Titulos
-    tituloTX = Gtk.Label(label="Transmissor (TX)")
-    tituloRX = Gtk.Label(label="Receptor (RX)")
-
-    tituloTX.set_hexpand(True)
-    tituloRX.set_hexpand(True)
-
-    gridAplicacao.attach(tituloTX, 0, 0, 1, 1)
-    gridAplicacao.attach(tituloRX, 1, 0, 1, 1)
-
-    # Textos transmitido e recebido
-    textoTX = Gtk.Label(
-        label="Aguardando transmissao..."
+    # Textos
+    textoTX = criarRotulo(
+        "Aguardando transmissao..."
     )
 
-    textoRX = Gtk.Label(
-        label="Aguardando recepcao..."
+    textoRX = criarRotulo(
+        "Aguardando recepcao..."
     )
-
-    textoTX.set_line_wrap(True)
-    textoRX.set_line_wrap(True)
-
-    textoTX.set_selectable(True)
-    textoRX.set_selectable(True)
 
     gridAplicacao.attach(textoTX, 0, 1, 1, 1)
     gridAplicacao.attach(textoRX, 1, 1, 1, 1)
 
     # Bits ASCII
-    bitsTX = Gtk.Label(
-        label="Aguardando bits TX..."
+    bitsTX = criarRotulo(
+        "Aguardando bits TX..."
     )
 
-    bitsRX = Gtk.Label(
-        label="Aguardando bits RX..."
+    bitsRX = criarRotulo(
+        "Aguardando bits RX..."
     )
-
-    bitsTX.set_line_wrap(True)
-    bitsRX.set_line_wrap(True)
-
-    bitsTX.set_max_width_chars(55)
-    bitsRX.set_max_width_chars(55)
-
-    bitsTX.set_selectable(True)
-    bitsRX.set_selectable(True)
 
     gridAplicacao.attach(bitsTX, 0, 2, 1, 1)
     gridAplicacao.attach(bitsRX, 1, 2, 1, 1)
 
+    # ======================================================
     # CAMADA DE ENLACE
+    # ======================================================
+
     frameEnlace = Gtk.Frame(
         label="Camada de Enlace"
     )
@@ -307,50 +481,26 @@ def iniciarInterface():
         frameEnlace, False, False, 0
     )
 
-    gridEnlace = Gtk.Grid()
-
-    gridEnlace.set_column_spacing(20)
-    gridEnlace.set_row_spacing(10)
-    gridEnlace.set_border_width(10)
-    gridEnlace.set_column_homogeneous(True)
-    gridEnlace.set_hexpand(True)
+    gridEnlace = criarGridTXRX()
 
     frameEnlace.add(gridEnlace)
 
-    # Titulos
-    tituloEnlaceTX = Gtk.Label(
-        label="Transmissor (TX)"
+    # Quadros transmitidos e recebidos
+    quadroTX = criarRotulo(
+        "Aguardando quadros TX..."
     )
 
-    tituloEnlaceRX = Gtk.Label(
-        label="Receptor (RX)"
+    quadroRX = criarRotulo(
+        "Aguardando quadros RX..."
     )
-
-    gridEnlace.attach(tituloEnlaceTX, 0, 0, 1, 1)
-    gridEnlace.attach(tituloEnlaceRX, 1, 0, 1, 1)
-
-    # Campos dos quadros
-    quadroTX = Gtk.Label(
-        label="Aguardando integracao do enlace..."
-    )
-
-    quadroRX = Gtk.Label(
-        label="Aguardando integracao do enlace..."
-    )
-
-    quadroTX.set_line_wrap(True)
-    quadroRX.set_line_wrap(True)
-
-    quadroTX.set_max_width_chars(55)
-    quadroRX.set_max_width_chars(55)
-
-    quadroTX.set_selectable(True)
-    quadroRX.set_selectable(True)
 
     gridEnlace.attach(quadroTX, 0, 1, 1, 1)
     gridEnlace.attach(quadroRX, 1, 1, 1, 1)
 
+    # ======================================================
     # CAMADA FISICA
+    # ======================================================
+
     frameFisica = Gtk.Frame(
         label="Camada Fisica"
     )
@@ -359,95 +509,75 @@ def iniciarInterface():
         frameFisica, False, False, 0
     )
 
-    gridFisica = Gtk.Grid()
-
-    gridFisica.set_column_spacing(20)
-    gridFisica.set_row_spacing(10)
-    gridFisica.set_border_width(10)
-    gridFisica.set_column_homogeneous(True)
-    gridFisica.set_hexpand(True)
+    gridFisica = criarGridTXRX()
 
     frameFisica.add(gridFisica)
 
-    # Titulos
-    tituloFisicaTX = Gtk.Label(
-        label="Transmissor (TX)"
-    )
-
-    tituloFisicaRX = Gtk.Label(
-        label="Receptor (RX)"
-    )
-
-    gridFisica.attach(tituloFisicaTX, 0, 0, 1, 1)
-    gridFisica.attach(tituloFisicaRX, 1, 0, 1, 1)
-
-    # Explica os valores exibidos
+    # Descricao dos sinais
     descricaoSinal = Gtk.Label(
         label="Aguardando dados da camada fisica..."
     )
 
     descricaoSinal.set_line_wrap(True)
 
-    # Ocupa duas colunas na primeira linha
     gridFisica.attach(
         descricaoSinal, 0, 1, 2, 1
     )
 
     # Sinais eletricos
-    sinalTX = Gtk.Label(
-        label="Aguardando sinal TX..."
+    sinalTX = criarRotulo(
+        "Aguardando sinal TX..."
     )
 
-    sinalRX = Gtk.Label(
-        label="Aguardando sinal RX..."
+    sinalRX = criarRotulo(
+        "Aguardando sinal RX..."
     )
-
-    sinalTX.set_line_wrap(True)
-    sinalRX.set_line_wrap(True)
-
-    sinalTX.set_max_width_chars(55)
-    sinalRX.set_max_width_chars(55)
-
-    sinalTX.set_selectable(True)
-    sinalRX.set_selectable(True)
 
     gridFisica.attach(sinalTX, 0, 2, 1, 1)
     gridFisica.attach(sinalRX, 1, 2, 1, 1)
 
+    # ======================================================
+    # BOTAO DE ENVIO E RESULTADO
+    # ======================================================
 
-    # BOTAO E RESULTADO
-    resultado = Gtk.Label(
-        label="Aguardando mensagem..."
+    resultado = criarRotulo(
+        "Aguardando mensagem..."
     )
-
-    resultado.set_line_wrap(True)
-    resultado.set_selectable(True)
 
     botao = Gtk.Button(label="Enviar")
 
-    # Todos os componentes devem existir
-    # antes de serem passados ao callback.
     botao.connect(
         "clicked",
         aoClicar,
         entrada,
         seletor,
         seletorPortadora,
+        seletorEnquadramento,
+        controleQuadro,
         controleRuido,
         resultado,
         textoTX,
         textoRX,
         bitsTX,
         bitsRX,
+        quadroTX,
+        quadroRX,
         sinalTX,
         sinalRX,
         descricaoSinal
     )
 
-    caixa.pack_start(botao, False, False, 0)
-    caixa.pack_start(resultado, False, False, 0)
+    caixa.pack_start(
+        botao, False, False, 0
+    )
 
-    # Exibe a interface
+    caixa.pack_start(
+        resultado, False, False, 0
+    )
+
+    # ======================================================
+    # EXIBIR INTERFACE
+    # ======================================================
+
     janela.show_all()
     Gtk.main()
-

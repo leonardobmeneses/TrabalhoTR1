@@ -1,6 +1,10 @@
 
-from AplicacaoRede.Conversor import (textoParaBits, bitsParaTexto)
-from Simulador.conversor import (stringParaLista, listaParaString)
+from AplicacaoRede.Conversor import (
+    textoParaBits, bitsParaTexto
+)
+from Simulador.conversor import (
+    stringParaLista, listaParaString
+)
 
 from CamadaFisica.ModulacaoDigital.NRZPolar.NRZPolar import (
     codificarNRZPolar, decodificadorNRZPolar
@@ -25,11 +29,25 @@ from CamadaFisica.ModulacaoPortadora.PSK8.PSK8 import (
 from CamadaFisica.ModulacaoPortadora.QAM32.QAM32 import (
     modular32QAM, demodular32QAM
 )
+from CamadaEnlace.Enquadramento.BitStuffing.BitStuffing import (
+    bit_stuffing_TX,
+    bit_stuffing_RX,
+    FLAG_BIT
+)
+from CamadaEnlace.Enquadramento.ByteStuffing.ByteStuffing import (
+    byte_stuffing_TX,
+    byte_stuffing_RX,
+    FLAG_BYTE,
+    ESC_BYTE
+)
+from CamadaEnlace.Enquadramento.Contagem.contagem import contagem_caracteres_TX, contagem_caracteres_RX
+from CamadaEnlace.Enquadramento.Entrelacamento.Entrelacamento import entrelacamento_TX, entrelacamento_RX
+
 
 from MeioComunicacao.meio import adicionarRuido
 
 
-# Funcao auxiliar para visualizar os sinais banda-base
+# FUNCAO AUXILIAR PARA VISUALIZACAO DOS SINAIS BANDA-BASE
 def resumirSinalBandaBase(
     sinal: list[float],
     modulacao: str,
@@ -48,7 +66,7 @@ def resumirSinalBandaBase(
         inicio = i * amostragem
 
         if modulacao == "Manchester":
-            # Uma amostra representativa de cada metade do bit
+            # Uma amostra representativa de cada metade
             primeira = sinal[inicio + amostragem // 4]
             segunda = sinal[inicio + 3 * amostragem // 4]
 
@@ -63,8 +81,7 @@ def resumirSinalBandaBase(
 
     return str(valores)
 
-
-# Seleciona o modulador por portadora
+# MODULACAO POR PORTADORA - TRANSMISSOR
 def modularPortadora(
     bits: list[int],
     portadora: str,
@@ -74,29 +91,39 @@ def modularPortadora(
 
     if portadora == "ASK":
         return modularASK(
-            bits, amplitude, amostragem=amostragem
+            bits,
+            amplitude,
+            amostragem=amostragem
         )
 
     elif portadora == "FSK":
         return modularFSK(
-            bits, amplitude, amostragem=amostragem
+            bits,
+            amplitude,
+            amostragem=amostragem
         )
 
     elif portadora == "8PSK":
         return modular8PSK(
-            bits, amplitude, amostragem=amostragem
+            bits,
+            amplitude,
+            amostragem=amostragem
         )
 
     elif portadora == "32-QAM":
         return modular32QAM(
-            bits, amplitude, amostragem=amostragem
+            bits,
+            amplitude,
+            amostragem=amostragem
         )
 
     else:
-        raise ValueError("Modulacao por portadora desconhecida")
+        raise ValueError(
+            "Modulacao por portadora desconhecida"
+        )
 
 
-# Seleciona o demodulador por portadora
+# DEMODULACAO POR PORTADORA - RECEPTOR
 def demodularPortadora(
     sinal: list[float],
     portadora: str,
@@ -107,91 +134,104 @@ def demodularPortadora(
 
     if portadora == "ASK":
         return demodularASK(
-            sinal, amplitude, amostragem=amostragem
+            sinal,
+            amplitude,
+            amostragem=amostragem
         )
 
     elif portadora == "FSK":
         return demodularFSK(
-            sinal, amostragem=amostragem
+            sinal,
+            amostragem=amostragem
         )
 
     elif portadora == "8PSK":
         return demodular8PSK(
-            sinal, quantidade_bits, amostragem=amostragem
+            sinal,
+            quantidade_bits,
+            amostragem=amostragem
         )
 
     elif portadora == "32-QAM":
         return demodular32QAM(
-            sinal, quantidade_bits, amplitude,
+            sinal,
+            quantidade_bits,
+            amplitude,
             amostragem=amostragem
         )
 
     else:
-        raise ValueError("Modulacao por portadora desconhecida")
+        raise ValueError(
+            "Modulacao por portadora desconhecida"
+        )
 
-
-# Funcao principal do simulador
-def transmitirMensagem(
-    mensagem: str,
+# CAMADA FISICA + MEIO DE COMUNICACAO
+def transmitirBits(
+    bits: list[int],
     modulacao: str,
     portadora: str = "Nenhuma",
     media: float = 0.0,
-    desvio_padrao: float = 0.0,
-    detalhes: bool = False
-) -> str | dict[str, str]:
+    desvio_padrao: float = 0.0
+) -> dict:
 
     amplitude = 1.0
     amostragem = 100
 
-    if not mensagem:
-        raise ValueError("A mensagem nao pode estar vazia.")
-
-    # Aplicacao de rede - transmissor
-    bitsString = textoParaBits(mensagem)
-
-    # Converte string de bits para lista de inteiros
-    bitsLista = stringParaLista(bitsString)
-
-    # Camada fisica - transmissor
+    # Verifica se a entrada e uma lista valida de bits
+    if (
+        not isinstance(bits, list)
+        or not bits
+        or any(type(bit) is not int or bit not in (0, 1) for bit in bits)
+    ):
+        raise ValueError(
+            "A entrada da camada fisica deve ser "
+            "uma lista nao vazia de bits 0 e 1."
+        )
+    # CAMADA FISICA - TRANSMISSOR
     if portadora != "Nenhuma":
-
         sinal = modularPortadora(
-            bitsLista, portadora, amplitude, amostragem
+            bits,
+            portadora,
+            amplitude,
+            amostragem
         )
 
     elif modulacao == "NRZPolar":
-
         sinal = codificarNRZPolar(
-            bitsLista, amplitude, amostragem
+            bits,
+            amplitude,
+            amostragem
         )
-
     elif modulacao == "Manchester":
-
         sinal = codificarManchester(
-            bitsLista, amplitude, amostragem
+            bits,
+            amplitude,
+            amostragem
         )
-
     elif modulacao == "Bipolar":
-
         sinal = codificarBipolar(
-            bitsLista, amplitude, amostragem
+            bits,
+            amplitude,
+            amostragem
         )
 
     else:
         raise ValueError("Codificacao desconhecida")
-
-    # Meio de comunicacao - adiciona ruido AWGN
+    
+    # MEIO DE COMUNICACAO - CANAL AWGN
     sinalRecebido = adicionarRuido(
-        sinal, media, desvio_padrao
+        sinal,
+        media,
+        desvio_padrao
     )
 
-    # Camada fisica - receptor
+    # CAMADA FISICA - RECEPTOR
     if portadora != "Nenhuma":
 
         bitsRecebidos = demodularPortadora(
             sinalRecebido,
             portadora,
-            len(bitsLista),
+            len(bits),
             amplitude,
             amostragem
         )
@@ -199,56 +239,247 @@ def transmitirMensagem(
     elif modulacao == "NRZPolar":
 
         amostras = amostradorSinal(
-            sinalRecebido, amostragem
+            sinalRecebido,
+            amostragem
         )
 
-        bitsRecebidos = decodificadorNRZPolar(amostras)
+        bitsRecebidos = decodificadorNRZPolar(
+            amostras
+        )
 
     elif modulacao == "Manchester":
 
         amostras = amostradorSinal(
-            sinalRecebido, amostragem // 2
+            sinalRecebido,
+            amostragem // 2
         )
 
-        bitsRecebidos = decodificadorManchester(amostras)
+        bitsRecebidos = decodificadorManchester(
+            amostras
+        )
 
     elif modulacao == "Bipolar":
 
         amostras = amostradorSinal(
-            sinalRecebido, amostragem
+            sinalRecebido,
+            amostragem
         )
 
         bitsRecebidos = decodificadorBipolar(
-            amostras, amplitude
+            amostras,
+            amplitude
         )
 
-    # Converte a lista recebida para string de bits
-    bitsRecebidosString = listaParaString(bitsRecebidos)
+    # Retorna os bits recuperados e os sinais completos
+    return {
+        "bitsRecebidos": bitsRecebidos,
+        "sinalTX": sinal,
+        "sinalRX": sinalRecebido
+    }
 
-    # Aplicacao de rede - receptor
-    mensagemRecebida = bitsParaTexto(bitsRecebidosString)
 
-    # Retorna os detalhes para a interface GTK
+def separarQuadrosBitStuffing(fluxo: str) -> list[str]:
+    # Identifica os quadros de um fluxo continuo usando as flags.
+    if not fluxo.startswith(FLAG_BIT) or not fluxo.endswith(FLAG_BIT):
+        raise ValueError("Fluxo recebido sem flags externas validas.")
+    partes = fluxo.split(FLAG_BIT)
+    quadros = [
+        FLAG_BIT + dados + FLAG_BIT
+        for dados in partes[1:-1]
+        if dados
+    ]
+    if not quadros:
+        raise ValueError("Nenhum quadro encontrado no fluxo recebido.")
+    return quadros
+# FUNCAO PRINCIPAL DO SIMULADOR
+
+
+def separarQuadrosByteStuffing(fluxo: str) -> list[str]:
+    """
+    Recupera quadros de um fluxo continuo.
+    Respeita o byte de escape para nao confundir dados com flags.
+    """
+
+    if not fluxo or len(fluxo) % 8 != 0:
+        raise ValueError("Fluxo de bytes invalido.")
+
+    quadros = []
+    inicio = None
+    escapado = False
+
+    for pos in range(0, len(fluxo), 8):
+        byte = fluxo[pos:pos + 8]
+
+        if inicio is None:
+            if byte != FLAG_BYTE:
+                raise ValueError("Dados fora de quadro.")
+            inicio = pos
+
+        elif escapado:
+            # O byte atual e dado, mesmo que seja uma flag
+            escapado = False
+
+        elif byte == ESC_BYTE:
+            escapado = True
+
+        elif byte == FLAG_BYTE:
+            quadro = fluxo[inicio:pos + 8]
+
+            if len(quadro) <= 16:
+                raise ValueError("Quadro vazio ou invalido.")
+
+            quadros.append(quadro)
+            inicio = None
+
+    if inicio is not None or escapado:
+        raise ValueError("Quadro incompleto.")
+
+    if not quadros:
+        raise ValueError("Nenhum quadro encontrado.")
+
+    return quadros
+
+
+def separarQuadrosContagem(fluxo: str) -> list[str]:
+    #Recupera quadros usando o primeiro byte como contagem
+    #da quantidade de bytes da carga util.
+
+    if not fluxo or len(fluxo) % 8 != 0:
+        raise ValueError("Fluxo de bytes invalido.")
+
+    quadros = []
+    pos = 0
+
+    while pos < len(fluxo):
+        cabecalho = fluxo[pos:pos + 8]
+
+        quantidade_bytes = int(cabecalho, 2)
+
+        if quantidade_bytes == 0:
+            raise ValueError("Contagem de caracteres invalida.")
+
+        fim = pos + 8 + quantidade_bytes * 8
+
+        if fim > len(fluxo):
+            raise ValueError("Quadro incompleto.")
+
+        quadros.append(fluxo[pos:fim])
+        pos = fim
+
+    return quadros
+
+
+def transmitirMensagem(
+    mensagem: str,
+    modulacao: str,
+    portadora: str = "Nenhuma",
+    media: float = 0.0,
+    desvio_padrao: float = 0.0,
+    detalhes: bool = False,
+    enquadramento: str = "Nenhum",
+    tam_max_quadro: int = 1
+) -> str | dict[str, str]:
+
+    amostragem = 100
+
+    if not mensagem:
+        raise ValueError("A mensagem nao pode estar vazia.")
+   
+    # APLICACAO - TRANSMISSOR
+    bitsString = textoParaBits(mensagem)
+
+   
+    # ENLACE - TRANSMISSOR
+
+    if enquadramento == "Bit stuffing":
+        quadrosTX = bit_stuffing_TX(
+            bitsString, tam_max_quadro
+        )
+
+    elif enquadramento == "Byte stuffing":
+        quadrosTX = byte_stuffing_TX(
+            bitsString, tam_max_quadro
+        )
+
+    elif enquadramento == "Contagem":
+        quadrosTX = contagem_caracteres_TX(
+            bitsString, tam_max_quadro
+        )
+
+    elif enquadramento == "Nenhum":
+        quadrosTX = []
+
+    else:
+        raise ValueError("Tipo de enquadramento desconhecido.")
+
+    if enquadramento == "Nenhum":
+        fluxoTX = bitsString
+    else:
+        fluxoTX = "".join(quadrosTX)
+
+    # CAMADA FISICA + CANAL AWGN
+    resultadoFisico = transmitirBits(
+        stringParaLista(fluxoTX),
+        modulacao,
+        portadora,
+        media,
+        desvio_padrao
+    )
+
+    fluxoRX = listaParaString(
+        resultadoFisico["bitsRecebidos"]
+    )
+
+    sinalTX = resultadoFisico["sinalTX"]
+    sinalRX = resultadoFisico["sinalRX"]
+
+    # ENLACE - RECEPTOR
+    if enquadramento == "Bit stuffing":
+        quadrosRX = separarQuadrosBitStuffing(fluxoRX)
+        bitsRecebidosString = bit_stuffing_RX(
+            quadrosRX
+        )
+
+    elif enquadramento == "Byte stuffing":
+        quadrosRX = separarQuadrosByteStuffing(fluxoRX)
+        bitsRecebidosString = byte_stuffing_RX(
+            quadrosRX
+        )
+    elif enquadramento == "Contagem":
+        quadrosRX = separarQuadrosContagem(fluxoRX)
+        bitsRecebidosString = contagem_caracteres_RX(
+            quadrosRX
+        )
+    else:
+        quadrosRX = []
+        bitsRecebidosString = fluxoRX
+
+    # APLICACAO - RECEPTOR
+    mensagemRecebida = bitsParaTexto(
+        bitsRecebidosString
+    )
+
+    # DETALHES PARA A INTERFACE
     if detalhes:
 
         if portadora == "Nenhuma":
-            # Exibe amostras representativas dos bits
+
             visualTX = resumirSinalBandaBase(
-                sinal, modulacao, amostragem
+                sinalTX, modulacao, amostragem
             )
 
             visualRX = resumirSinalBandaBase(
-                sinalRecebido, modulacao, amostragem
+                sinalRX, modulacao, amostragem
             )
 
         else:
-            # dez amostras da onda por portadora
+
             visualTX = str([
-                round(v, 2) for v in sinal[:10]
+                round(v, 2) for v in sinalTX[:10]
             ])
 
             visualRX = str([
-                round(v, 2) for v in sinalRecebido[:10]
+                round(v, 2) for v in sinalRX[:10]
             ])
 
         return {
@@ -256,6 +487,8 @@ def transmitirMensagem(
             "bitsTX": bitsString,
             "textoRX": mensagemRecebida,
             "bitsRX": bitsRecebidosString,
+            "quadroTX": " | ".join(quadrosTX),
+            "quadroRX": " | ".join(quadrosRX),
             "sinalTX": visualTX,
             "sinalRX": visualRX
         }
