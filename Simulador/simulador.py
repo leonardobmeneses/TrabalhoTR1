@@ -31,17 +31,18 @@ from CamadaFisica.ModulacaoPortadora.QAM32.QAM32 import (
 )
 from CamadaEnlace.Enquadramento.BitStuffing.BitStuffing import (
     bit_stuffing_TX,
-    bit_stuffing_RX,
-    FLAG_BIT
+    bit_stuffing_RX
 )
 from CamadaEnlace.Enquadramento.ByteStuffing.ByteStuffing import (
     byte_stuffing_TX,
-    byte_stuffing_RX,
-    FLAG_BYTE,
-    ESC_BYTE
+    byte_stuffing_RX
 )
 from CamadaEnlace.Enquadramento.Contagem.contagem import contagem_caracteres_TX, contagem_caracteres_RX
 from CamadaEnlace.Enquadramento.Entrelacamento.Entrelacamento import entrelacamento_TX, entrelacamento_RX
+from CamadaEnlace.DeteccaoErro.BitParidade.BitParidade import bit_paridade_TX, bit_paridade_RX
+from CamadaEnlace.DeteccaoErro.Checksum.Checksum import checksum_TX, checksum_RX
+from CamadaEnlace.DeteccaoErro.CRC.CRC import crc_TX, crc_RX
+from CamadaEnlace.CorrecaoErro.Hamming.hamming import hamming_TX, hamming_RX
 
 
 from MeioComunicacao.meio import adicionarRuido
@@ -277,98 +278,157 @@ def transmitirBits(
         "sinalRX": sinalRecebido
     }
 
+# ENLACE - ENQUADRAMENTO (TRANSMISSOR)
+def enquadrarTX(
+    bitsString: str,
+    enquadramento: str,
+    tam_max_quadro: int
+) -> list[str]:
+    # Divide a carga util em quadros de acordo com o protocolo escolhido.
+    # Sem enquadramento, a mensagem inteira e tratada como um unico quadro.
+    if enquadramento == "Bit stuffing":
+        return bit_stuffing_TX(bitsString, tam_max_quadro)
 
-def separarQuadrosBitStuffing(fluxo: str) -> list[str]:
-    # Identifica os quadros de um fluxo continuo usando as flags.
-    if not fluxo.startswith(FLAG_BIT) or not fluxo.endswith(FLAG_BIT):
-        raise ValueError("Fluxo recebido sem flags externas validas.")
-    partes = fluxo.split(FLAG_BIT)
-    quadros = [
-        FLAG_BIT + dados + FLAG_BIT
-        for dados in partes[1:-1]
-        if dados
-    ]
-    if not quadros:
-        raise ValueError("Nenhum quadro encontrado no fluxo recebido.")
-    return quadros
+    elif enquadramento == "Byte stuffing":
+        return byte_stuffing_TX(bitsString, tam_max_quadro)
+
+    elif enquadramento == "Contagem":
+        return contagem_caracteres_TX(bitsString, tam_max_quadro)
+
+    elif enquadramento == "Entrelaçamento":
+        return entrelacamento_TX(bitsString, tam_max_quadro)
+
+    elif enquadramento == "Nenhum":
+        return [bitsString]
+
+    else:
+        raise ValueError("Tipo de enquadramento desconhecido.")
+
+
+# ENLACE - DESENQUADRAMENTO (RECEPTOR)
+def desenquadrarRX(
+    quadros: list[str | None],
+    enquadramento: str
+) -> tuple[str, list[int]]:
+    # Remove o enquadramento e devolve (carga util, numeros dos quadros descartados).
+    # Posicoes com None sao quadros que ja foram descartados pela deteccao de erros.
+    validos = [quadro for quadro in quadros if quadro is not None]
+
+    if not validos:
+        return "", []
+
+    if enquadramento == "Nenhum":
+        return "".join(validos), []
+
+    # No entrelacamento o bloco inteiro e conferido junto,
+    # pois a ultima linha e a paridade de todas as outras
+    if enquadramento == "Entrelaçamento":
+        return entrelacamento_RX(validos), []
+
+    funcoesRX = {
+        "Bit stuffing": bit_stuffing_RX,
+        "Byte stuffing": byte_stuffing_RX,
+        "Contagem": contagem_caracteres_RX
+    }
+
+    if enquadramento not in funcoesRX:
+        raise ValueError("Tipo de enquadramento desconhecido.")
+
+    # Cada quadro e desenquadrado separadamente: um quadro corrompido
+    # (flag ou contagem estragada pelo ruido) e descartado sem perder os outros
+    cargaUtil = ""
+    descartados = []
+
+    for numero, quadro in enumerate(quadros, start=1):
+        if quadro is None:
+            continue
+        try:
+            dados = funcoesRX[enquadramento]([quadro])
+            if len(dados) % 8 != 0:
+                raise ValueError("Quadro sem numero inteiro de bytes.")
+            cargaUtil += dados
+        except ValueError:
+            descartados.append(numero)
+
+    return cargaUtil, descartados
+
+
+# ENLACE - DETECCAO / CORRECAO DE ERROS (TRANSMISSOR)
+def aplicarDeteccaoTX(
+    quadros: list[str],
+    deteccao: str
+) -> list[str]:
+    # Anexa a cada quadro o codigo de deteccao (EDC) ou, no Hamming,
+    # transforma o quadro em uma palavra de codigo com bits de paridade.
+    if deteccao == "Bit de paridade":
+        return bit_paridade_TX(quadros)
+
+    elif deteccao == "Checksum":
+        return checksum_TX(quadros)
+
+    elif deteccao == "CRC-32":
+        return crc_TX(quadros)
+
+    elif deteccao == "Hamming":
+        return [hamming_TX(quadro) for quadro in quadros]
+
+    elif deteccao == "Nenhuma":
+        return list(quadros)
+
+    else:
+        raise ValueError("Tipo de deteccao ou correcao desconhecido.")
+
+
+# ENLACE - DETECCAO / CORRECAO DE ERROS (RECEPTOR)
+def verificarDeteccaoRX(
+    quadros: list[str],
+    deteccao: str
+) -> tuple[list[str | None], list[str]]:
+    # Confere cada quadro recebido.
+    # Quadro correto: o codigo e removido e o quadro segue para o desenquadramento.
+    # Quadro com erro detectado: e descartado (vira None) e o descarte e sinalizado.
+    # Hamming: corrige 1 bit por quadro e informa a posicao corrigida.
+    # Retorna (quadros verificados, relatorio de cada quadro).
+    if deteccao == "Nenhuma":
+        return list(quadros), [f"Q{n}: sem verificacao" for n in range(1, len(quadros) + 1)]
+
+    funcoesRX = {
+        "Bit de paridade": bit_paridade_RX,
+        "Checksum": checksum_RX,
+        "CRC-32": crc_RX
+    }
+
+    if deteccao != "Hamming" and deteccao not in funcoesRX:
+        raise ValueError("Tipo de deteccao ou correcao desconhecido.")
+
+    verificados = []
+    relatorio = []
+
+    for numero, quadro in enumerate(quadros, start=1):
+        try:
+            if deteccao == "Hamming":
+                dados, posicao = hamming_RX(quadro)
+
+                if posicao == 0:
+                    relatorio.append(f"Q{numero}: OK")
+                else:
+                    relatorio.append(
+                        f"Q{numero}: bit {posicao} corrigido"
+                    )
+            else:
+                dados = funcoesRX[deteccao]([quadro])[0]
+                relatorio.append(f"Q{numero}: OK")
+
+            verificados.append(dados)
+
+        except ValueError:
+            verificados.append(None)
+            relatorio.append(f"Q{numero}: erro detectado, descartado")
+
+    return verificados, relatorio
+
+
 # FUNCAO PRINCIPAL DO SIMULADOR
-
-
-def separarQuadrosByteStuffing(fluxo: str) -> list[str]:
-    """
-    Recupera quadros de um fluxo continuo.
-    Respeita o byte de escape para nao confundir dados com flags.
-    """
-
-    if not fluxo or len(fluxo) % 8 != 0:
-        raise ValueError("Fluxo de bytes invalido.")
-
-    quadros = []
-    inicio = None
-    escapado = False
-
-    for pos in range(0, len(fluxo), 8):
-        byte = fluxo[pos:pos + 8]
-
-        if inicio is None:
-            if byte != FLAG_BYTE:
-                raise ValueError("Dados fora de quadro.")
-            inicio = pos
-
-        elif escapado:
-            # O byte atual e dado, mesmo que seja uma flag
-            escapado = False
-
-        elif byte == ESC_BYTE:
-            escapado = True
-
-        elif byte == FLAG_BYTE:
-            quadro = fluxo[inicio:pos + 8]
-
-            if len(quadro) <= 16:
-                raise ValueError("Quadro vazio ou invalido.")
-
-            quadros.append(quadro)
-            inicio = None
-
-    if inicio is not None or escapado:
-        raise ValueError("Quadro incompleto.")
-
-    if not quadros:
-        raise ValueError("Nenhum quadro encontrado.")
-
-    return quadros
-
-
-def separarQuadrosContagem(fluxo: str) -> list[str]:
-    #Recupera quadros usando o primeiro byte como contagem
-    #da quantidade de bytes da carga util.
-
-    if not fluxo or len(fluxo) % 8 != 0:
-        raise ValueError("Fluxo de bytes invalido.")
-
-    quadros = []
-    pos = 0
-
-    while pos < len(fluxo):
-        cabecalho = fluxo[pos:pos + 8]
-
-        quantidade_bytes = int(cabecalho, 2)
-
-        if quantidade_bytes == 0:
-            raise ValueError("Contagem de caracteres invalida.")
-
-        fim = pos + 8 + quantidade_bytes * 8
-
-        if fim > len(fluxo):
-            raise ValueError("Quadro incompleto.")
-
-        quadros.append(fluxo[pos:fim])
-        pos = fim
-
-    return quadros
-
-
 def transmitirMensagem(
     mensagem: str,
     modulacao: str,
@@ -377,82 +437,64 @@ def transmitirMensagem(
     desvio_padrao: float = 0.0,
     detalhes: bool = False,
     enquadramento: str = "Nenhum",
-    tam_max_quadro: int = 1
+    tam_max_quadro: int = 1,
+    deteccao: str = "Nenhuma"
 ) -> str | dict[str, str]:
 
     amostragem = 100
 
     if not mensagem:
         raise ValueError("A mensagem nao pode estar vazia.")
-   
+
     # APLICACAO - TRANSMISSOR
     bitsString = textoParaBits(mensagem)
 
-   
     # ENLACE - TRANSMISSOR
+    # 1) enquadramento  2) deteccao/correcao anexada a cada quadro
+    quadrosEnquadrados = enquadrarTX(
+        bitsString, enquadramento, tam_max_quadro
+    )
 
-    if enquadramento == "Bit stuffing":
-        quadrosTX = bit_stuffing_TX(
-            bitsString, tam_max_quadro
-        )
-
-    elif enquadramento == "Byte stuffing":
-        quadrosTX = byte_stuffing_TX(
-            bitsString, tam_max_quadro
-        )
-
-    elif enquadramento == "Contagem":
-        quadrosTX = contagem_caracteres_TX(
-            bitsString, tam_max_quadro
-        )
-
-    elif enquadramento == "Nenhum":
-        quadrosTX = []
-
-    else:
-        raise ValueError("Tipo de enquadramento desconhecido.")
-
-    if enquadramento == "Nenhum":
-        fluxoTX = bitsString
-    else:
-        fluxoTX = "".join(quadrosTX)
+    quadrosTX = aplicarDeteccaoTX(
+        quadrosEnquadrados, deteccao
+    )
 
     # CAMADA FISICA + CANAL AWGN
-    resultadoFisico = transmitirBits(
-        stringParaLista(fluxoTX),
-        modulacao,
-        portadora,
-        media,
-        desvio_padrao
-    )
+    # Cada quadro e transmitido separadamente, assim o receptor
+    # sabe onde cada quadro comeca e termina
+    quadrosRecebidos = []
+    sinalTX = []
+    sinalRX = []
 
-    fluxoRX = listaParaString(
-        resultadoFisico["bitsRecebidos"]
-    )
+    for quadro in quadrosTX:
+        resultadoFisico = transmitirBits(
+            stringParaLista(quadro),
+            modulacao,
+            portadora,
+            media,
+            desvio_padrao
+        )
 
-    sinalTX = resultadoFisico["sinalTX"]
-    sinalRX = resultadoFisico["sinalRX"]
+        quadrosRecebidos.append(
+            listaParaString(resultadoFisico["bitsRecebidos"])
+        )
+
+        sinalTX += resultadoFisico["sinalTX"]
+        sinalRX += resultadoFisico["sinalRX"]
 
     # ENLACE - RECEPTOR
-    if enquadramento == "Bit stuffing":
-        quadrosRX = separarQuadrosBitStuffing(fluxoRX)
-        bitsRecebidosString = bit_stuffing_RX(
-            quadrosRX
-        )
+    # 1) verifica/corrige cada quadro  2) desenquadramento
+    quadrosVerificados, relatorio = verificarDeteccaoRX(
+        quadrosRecebidos, deteccao
+    )
 
-    elif enquadramento == "Byte stuffing":
-        quadrosRX = separarQuadrosByteStuffing(fluxoRX)
-        bitsRecebidosString = byte_stuffing_RX(
-            quadrosRX
-        )
-    elif enquadramento == "Contagem":
-        quadrosRX = separarQuadrosContagem(fluxoRX)
-        bitsRecebidosString = contagem_caracteres_RX(
-            quadrosRX
-        )
-    else:
-        quadrosRX = []
-        bitsRecebidosString = fluxoRX
+    bitsRecebidosString, descartados = desenquadrarRX(
+        quadrosVerificados, enquadramento
+    )
+
+    # Sinaliza os quadros descartados no desenquadramento
+    for numero in descartados:
+        relatorio[numero - 1] += ", quadro corrompido, descartado"
 
     # APLICACAO - RECEPTOR
     mensagemRecebida = bitsParaTexto(
@@ -488,7 +530,8 @@ def transmitirMensagem(
             "textoRX": mensagemRecebida,
             "bitsRX": bitsRecebidosString,
             "quadroTX": " | ".join(quadrosTX),
-            "quadroRX": " | ".join(quadrosRX),
+            "quadroRX": " | ".join(quadrosRecebidos),
+            "verificacao": " | ".join(relatorio),
             "sinalTX": visualTX,
             "sinalRX": visualRX
         }

@@ -1,7 +1,6 @@
 from MeioComunicacao.meio import adicionarRuido
 from CamadaFisica.ModulacaoDigital.NRZPolar.NRZPolar import (codificarNRZPolar,decodificadorNRZPolar)
 from CamadaFisica.ModulacaoDigital.amostrador import amostradorSinal 
-from visualizador import plotarNRZPolar
 import random
 
 sinal = [1.0, -1.0, 1.0, 1.0, -1.0]
