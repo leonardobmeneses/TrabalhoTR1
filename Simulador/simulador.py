@@ -47,6 +47,9 @@ from CamadaEnlace.CorrecaoErro.Hamming.hamming import hamming_TX, hamming_RX
 
 from MeioComunicacao.meio import adicionarRuido
 
+AMPLITUDE = 1.0
+AMOSTRAGEM = 100
+
 
 # FUNCAO AUXILIAR PARA VISUALIZACAO DOS SINAIS BANDA-BASE
 def resumirSinalBandaBase(
@@ -540,3 +543,92 @@ def transmitirMensagem(
         }
 
     return mensagemRecebida
+
+
+# FUNCOES PARA THREADS ABAIXO
+def codificarFisicaTX(bits, modulacao, portadora):
+    if (not isinstance(bits, list) or not bits
+            or any(type(b) is not int or b not in (0, 1) for b in bits)):
+        raise ValueError("A entrada da camada fisica deve ser uma lista nao vazia de bits 0 e 1.")
+
+    if portadora != "Nenhuma":
+        return modularPortadora(bits, portadora, AMPLITUDE, AMOSTRAGEM)
+    elif modulacao == "NRZPolar":
+        return codificarNRZPolar(bits, AMPLITUDE, AMOSTRAGEM)
+    elif modulacao == "Manchester":
+        return codificarManchester(bits, AMPLITUDE, AMOSTRAGEM)
+    elif modulacao == "Bipolar":
+        return codificarBipolar(bits, AMPLITUDE, AMOSTRAGEM)
+    raise ValueError("Codificacao desconhecida")
+
+
+def decodificarFisicaRX(sinalRecebido, modulacao, portadora, quantidadeBits):
+    if portadora != "Nenhuma":
+        return demodularPortadora(sinalRecebido, portadora, quantidadeBits, AMPLITUDE, AMOSTRAGEM)
+    elif modulacao == "NRZPolar":
+        return decodificadorNRZPolar(amostradorSinal(sinalRecebido, AMOSTRAGEM))
+    elif modulacao == "Manchester":
+        return decodificadorManchester(amostradorSinal(sinalRecebido, AMOSTRAGEM // 2))
+    elif modulacao == "Bipolar":
+        return decodificadorBipolar(amostradorSinal(sinalRecebido, AMOSTRAGEM), AMPLITUDE)
+    raise ValueError("Codificacao desconhecida")
+
+
+def descreverSinal(sinal, modulacao, portadora):
+    if portadora == "Nenhuma":
+        return resumirSinalBandaBase(sinal, modulacao, AMOSTRAGEM)
+    return str([round(v, 2) for v in sinal[:10]])
+
+
+def executarTX(mensagem, modulacao, portadora, enquadramento, tam_max_quadro, deteccao):
+    if not mensagem:
+        raise ValueError("A mensagem nao pode estar vazia.")
+
+    bitsString = textoParaBits(mensagem)
+    quadrosEnquadrados = enquadrarTX(bitsString, enquadramento, tam_max_quadro)
+    quadrosTX = aplicarDeteccaoTX(quadrosEnquadrados, deteccao)
+
+    pacotes = []        # um pacote por quadro: sinal + quantidade de bits
+    amostrasTX = []
+    for quadro in quadrosTX:
+        bits = stringParaLista(quadro)
+        sinal = codificarFisicaTX(bits, modulacao, portadora)
+        pacotes.append({"sinal": sinal, "nBits": len(bits)})
+        amostrasTX += sinal
+
+    return {
+        "textoTX": mensagem,
+        "bitsTX": bitsString,
+        "quadroTX": " | ".join(quadrosTX),
+        "sinalTX": descreverSinal(amostrasTX, modulacao, portadora),
+        "amostrasTX": amostrasTX,
+        "pacotes": pacotes,
+        "enlaceAtivo": enquadramento != "Nenhum" or deteccao != "Nenhuma",
+    }
+
+
+def executarRX(pacotes, modulacao, portadora, enquadramento, deteccao):
+    quadrosRecebidos = []
+    amostrasRX = []
+    for pacote in pacotes:
+        bits = decodificarFisicaRX(pacote["sinal"], modulacao, portadora, pacote["nBits"])
+        quadrosRecebidos.append(listaParaString(bits))
+        amostrasRX += pacote["sinal"]
+
+    quadrosVerificados, relatorio = verificarDeteccaoRX(quadrosRecebidos, deteccao)
+    bitsRecebidos, descartados = desenquadrarRX(quadrosVerificados, enquadramento)
+    for numero in descartados:
+        relatorio[numero - 1] += ", quadro corrompido, descartado"
+
+    return {
+        "textoRX": bitsParaTexto(bitsRecebidos),
+        "bitsRX": bitsRecebidos,
+        "quadroRX": " | ".join(quadrosRecebidos),
+        "verificacao": " | ".join(relatorio),
+        "sinalRX": descreverSinal(amostrasRX, modulacao, portadora),
+        "amostrasRX": amostrasRX,
+        "amostragem": AMOSTRAGEM,
+        "portadora": portadora,
+        "deteccao": deteccao,
+        "enlaceAtivo": enquadramento != "Nenhum" or deteccao != "Nenhuma",
+    }

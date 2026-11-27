@@ -2,9 +2,9 @@
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
+from Simulador.comunicacao import ChatSimulador
 
-from Simulador.simulador import transmitirMensagem
 from Interface.grafico import criarGrafico, limparGrafico, atualizarGrafico
 
 # FUNCOES AUXILIARES DA INTERFACE
@@ -75,155 +75,51 @@ def aoMudarPortadora(
 
 # EVENTO DO BOTAO ENVIAR
 def aoClicar(
-    botao,
-    entrada,
-    seletor,
-    seletorPortadora,
-    seletorEnquadramento,
-    controleQuadro,
-    seletorDeteccao,
-    controleMedia,
-    controleRuido,
-    resultado,
-    textoTX,
-    textoRX,
-    bitsTX,
-    bitsRX,
-    quadroTX,
-    quadroRX,
-    verificacao,
-    sinalTX,
-    sinalRX,
-    descricaoSinal,
-    grafico
+    botao, entrada, seletor, seletorPortadora, seletorEnquadramento,
+    controleQuadro, seletorDeteccao, controleMedia, controleRuido,
+    resultado, textoTX, textoRX, bitsTX, bitsRX, quadroTX, quadroRX,
+    verificacao, sinalTX, sinalRX, descricaoSinal, grafico, chat
 ):
-
-    # Recupera as configuracoes selecionadas
     mensagem = entrada.get_text()
-
     modulacao = seletor.get_active_text()
     portadora = seletorPortadora.get_active_text()
 
-    enquadramento = seletorEnquadramento.get_active_text()
-    tam_max_quadro = controleQuadro.get_value_as_int()
-
-    deteccao = seletorDeteccao.get_active_text()
-
-    media = controleMedia.get_value()
-    desvio_padrao = controleRuido.get_value()
+    config = {
+        "modulacao": modulacao,
+        "portadora": portadora,
+        "enquadramento": seletorEnquadramento.get_active_text(),
+        "tam_max_quadro": controleQuadro.get_value_as_int(),
+        "deteccao": seletorDeteccao.get_active_text(),
+        "media": controleMedia.get_value(),
+        "desvio_padrao": controleRuido.get_value(),
+    }
 
     # Limpa os resultados anteriores
     textoTX.set_text(mensagem)
     textoRX.set_text("Aguardando recepcao...")
-
     bitsTX.set_text("")
     bitsRX.set_text("")
-
     quadroTX.set_text("")
     quadroRX.set_text("")
     verificacao.set_text("")
-
     sinalTX.set_text("")
     sinalRX.set_text("")
-
-    descricaoSinal.set_text("")
     resultado.set_text("Processando transmissao...")
     limparGrafico(grafico)
 
-    try:
-
-        # Executa o simulador completo
-        dados = transmitirMensagem(
-            mensagem,
-            modulacao,
-            portadora,
-            media=media,
-            desvio_padrao=desvio_padrao,
-            detalhes=True,
-            enquadramento=enquadramento,
-            tam_max_quadro=tam_max_quadro,
-            deteccao=deteccao
-        )
-
-        # APLICACAO DE REDE
-        textoTX.set_text(dados["textoTX"])
-        textoRX.set_text(dados["textoRX"])
-        atualizarGrafico(
-            grafico,
-            dados["amostrasTX"],
-            dados["amostrasRX"],
-            dados["amostragem"],
-            portadora
-            )
-        bitsTX.set_text(dados["bitsTX"])
-        bitsRX.set_text(dados["bitsRX"])
-
-        # CAMADA DE ENLACE
-        if enquadramento == "Nenhum" and deteccao == "Nenhuma":
-
-            quadroTX.set_text("Sem enquadramento")
-            quadroRX.set_text("Sem enquadramento")
-
-        else:
-
-            quadroTX.set_text(dados["quadroTX"])
-            quadroRX.set_text(dados["quadroRX"])
-
-        verificacao.set_text(
-            "Verificacao no receptor (" + deteccao + "): "
-            + dados["verificacao"]
-        )
-
-        # CAMADA FISICA
-        if portadora == "Nenhuma":
-
-            if modulacao == "Manchester":
-
-                descricaoSinal.set_text(
-                    "Banda-base: duas amostras "
-                    "representativas por bit (V)"
-                )
-
-            else:
-
-                descricaoSinal.set_text(
-                    "Banda-base: uma amostra "
-                    "representativa por bit (V)"
-                )
-
-        else:
-
-            descricaoSinal.set_text(
-                "Modulacao por portadora: "
-                "primeiras 10 amostras da onda (V)"
-            )
-
-        sinalTX.set_text(dados["sinalTX"])
-        sinalRX.set_text(dados["sinalRX"])
-
-        # RESULTADO FINAL
-        resultado.set_text(
-            "Mensagem recebida: " + dados["textoRX"]
-        )
-
-    except (ValueError, UnicodeError) as erro:
-
-        textoRX.set_text("Falha na recepcao")
-        bitsRX.set_text("Dados indisponiveis")
-
-        quadroTX.set_text("Transmissao nao concluida")
-        quadroRX.set_text("Recepcao nao concluida")
-        verificacao.set_text("Verificacao nao concluida")
-
-        sinalTX.set_text("Dados indisponiveis")
-        sinalRX.set_text("Dados indisponiveis")
-
+    # Descricao do sinal (so depende da configuracao escolhida)
+    if portadora != "Nenhuma":
         descricaoSinal.set_text(
-            "Nao foi possivel concluir a transmissao."
-        )
+            "Modulacao por portadora: primeiras 10 amostras da onda (V)")
+    elif modulacao == "Manchester":
+        descricaoSinal.set_text(
+            "Banda-base: duas amostras representativas por bit (V)")
+    else:
+        descricaoSinal.set_text(
+            "Banda-base: uma amostra representativa por bit (V)")
 
-        resultado.set_text("Erro: " + str(erro))
-
+    # Entrega a mensagem a thread TX e retorna na hora
+    chat.enviar(mensagem, config)
 
 # INICIALIZACAO DA INTERFACE
 def iniciarInterface():
@@ -562,6 +458,48 @@ def iniciarInterface():
         "Aguardando mensagem..."
     )
 
+    estado = {"amostrasTX": []}
+
+    def mostrarTX(dados):
+        textoTX.set_text(dados["textoTX"])
+        bitsTX.set_text(dados["bitsTX"])
+        quadroTX.set_text(
+            dados["quadroTX"] if dados["enlaceAtivo"] else "Sem enquadramento")
+        sinalTX.set_text(dados["sinalTX"])
+        estado["amostrasTX"] = dados["amostrasTX"]
+
+    def mostrarRX(dados):
+        textoRX.set_text(dados["textoRX"])
+        bitsRX.set_text(dados["bitsRX"])
+        quadroRX.set_text(
+            dados["quadroRX"] if dados["enlaceAtivo"] else "Sem enquadramento")
+        verificacao.set_text(
+            "Verificacao no receptor (" + dados["deteccao"] + "): "
+            + dados["verificacao"])
+        sinalRX.set_text(dados["sinalRX"])
+        resultado.set_text("Mensagem recebida: " + dados["textoRX"])
+        atualizarGrafico(grafico, estado["amostrasTX"], dados["amostrasRX"],
+                         dados["amostragem"], dados["portadora"])
+
+    def mostrarErro(origem, erro):
+        textoRX.set_text("Falha na recepcao")
+        bitsRX.set_text("Dados indisponiveis")
+        quadroTX.set_text("Transmissao nao concluida")
+        quadroRX.set_text("Recepcao nao concluida")
+        verificacao.set_text("Verificacao nao concluida")
+        sinalTX.set_text("Dados indisponiveis")
+        sinalRX.set_text("Dados indisponiveis")
+        descricaoSinal.set_text("Nao foi possivel concluir a transmissao.")
+        resultado.set_text("Erro: " + str(erro))
+
+    # As threads nunca mexem na interface: agendam a atualizacao no GTK
+    chat = ChatSimulador(
+        aoTerminarTX=lambda d: GLib.idle_add(mostrarTX, d),
+        aoTerminarRX=lambda d: GLib.idle_add(mostrarRX, d),
+        aoErro=lambda o, e: GLib.idle_add(mostrarErro, o, e),
+    )
+    chat.iniciar()
+
     botao = Gtk.Button(label="Enviar")
 
     botao.connect(
@@ -586,7 +524,8 @@ def iniciarInterface():
         sinalTX,
         sinalRX,
         descricaoSinal,
-        grafico
+        grafico,
+        chat
     )
 
     caixa.pack_start(
